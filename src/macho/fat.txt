@@ -1,0 +1,164 @@
+// File Purpose: "Which Mach-O should be parsed?"
+
+/*
+The FAT Header is outside of the Mach O
+----------------+
+| fat_header     |
++----------------+
+| fat_arch[0]    |  ← contains cputype, offset, size
++----------------+
+| fat_arch[1]    |
++----------------+
+| ...            |
++----------------+
+| Mach-O blob A  |  ← starts at offset
++----------------+
+| Mach-O blob B  |
++----------------+
+*/
+
+use std::error::Error;
+use crate::macho::constants::{CPU_ARCH_ABI64, CPU_TYPE_ARM64, CPU_TYPE_X86, CPU_TYPE_X86_64};
+
+use super::constants;
+
+/*
+From <mach-o/fat.h>
+#define FAT_MAGIC	0xcafebabe
+#define FAT_CIGAM	0xbebafeca	/* NXSwapLong(FAT_MAGIC) */
+*/
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FatHeader {
+    pub magic: u32, // FAT_MAGIC or FAT_MAGIC_64
+    pub nfat_arch: u32, // number of structs that follow
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FatArch32 {
+    pub cputype: i32,
+    pub cpusubtype: i32,
+    pub offset: u32,
+    pub size: u32,
+    pub align: u32,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FatArch64 {
+    pub cputype: i32,
+    pub cpusubtype: i32,
+    pub offset: u64,
+    pub size: u64,
+    pub align: u32,
+    pub reserved: u32,
+}
+#[repr(C)]
+#[derive(Debug)]
+pub enum FatArch {
+    Arch32(FatArch32),
+    Arch64(FatArch64),
+}
+
+pub fn read_fat_archs(  data: &[u8], // Entire file contents
+                        header: &FatHeader, // Previously-parsed fat header
+                        is_64: bool, // Whether this is a fat_arch_64
+                        little_endian: bool, // Endianness of fat header/entries
+) -> Result<Vec<FatArch>, Box<dyn Error>> {
+    // archs will store all parsed architecture entries
+    let mut archs = Vec::new();
+    // the far_arch array starts immediately after the fat_header
+    // fat_header is exactly 8 bytes:
+    //  u32  magic
+    //  u32 nfat_arch
+    let mut offset = std::mem::size_of::<FatHeader>();
+    
+    // Iterate once per architecture entry
+    for _ in 0..header.nfat_arch { 
+        // Case 1: 64 bit fat architecture entries
+        if is_64 {
+            // Determine how many bytes this entry occupies
+            let bytes = &data[offset..offset + std::mem::size_of::<FatArch64>()];
+            // Slice the exact bytes corresponding to this fat_arch_64
+
+            // I think I need to use unsafe here?
+            /*
+                I'm interpreting raw bytes as a C-style struct (because of #[repr(C)])
+                `read_unaligned` is required because file data isn't guaranteed to be aligned in memory
+             */
+
+            let arch: FatArch64 = if little_endian {
+                unsafe { std::ptr::read_unaligned(bytes.as_ptr() as *const _)}
+            } else {
+                unsafe { std::ptr::read_unaligned(bytes.as_ptr() as *const _)}
+            };
+            archs.push(FatArch::Arch64(arch));
+            offset += std::mem::size_of::<FatArch64>();
+        } else {
+            let bytes = &data[offset..offset + std::mem::size_of::<FatArch32>()];
+            let arch: FatArch32 = unsafe { std::ptr::read_unaligned(bytes.as_ptr() as *const _)};
+            archs.push(FatArch::Arch32(arch));
+            offset += std::mem::size_of::<FatArch32>();
+        }
+    }
+    Ok(archs)
+}
+
+
+
+pub fn read_fat_header(data: &[u8]) -> Result<FatHeader, Box<dyn Error>> {
+    /*
+        Given the bytes of a file, determine whether it is a fat binary and,
+        if so, extract the fat header metadata needed to continue parsing
+     */
+ 
+    // The magic bytes tell us if the file is fat, the arch, and the endianness
+    // The nfat_arch tells us how many arch descriptors follow, how much data to be read, etc.
+    use std::mem::size_of;
+
+    // A fat header is exactly 8 bytes
+    if data.len() < size_of::<FatHeader>() {
+        return Err("File too small to be a fat binary".into());
+    }
+
+
+    let raw_magic_bytes: [u8; 4] = data[0..4].try_into()?;
+    
+    match raw_magic_bytes {
+        FAT_CIGAM => {
+            // Little Endian, 32 Bit
+            println!("32 Bit; Little Endianness detected!");
+            let magic: u32 = u32::from_le_bytes(data[0..4].try_into()?);
+            let nfat_arch: u32 = u32::from_le_bytes(data[4..8].try_into()?);
+            return Ok(FatHeader { magic, nfat_arch });
+        }
+        FAT_MAGIC => {
+            // Big Endian, 32 Bit
+            println!("32 Bit; Big Endianness detected!");
+            let magic: u32 = u32::from_be_bytes(data[0..4].try_into()?);
+            let nfat_arch: u32 = u32::from_be_bytes(data[4..8].try_into()?);
+            return Ok(FatHeader { magic, nfat_arch });
+        }
+        FAT_CIGAM_64 => {
+            // Little Endian, 64 Bit
+            println!("64 Bit; Little Endianness detected!");
+            let magic: u32 = u32::from_le_bytes(data[0..4].try_into()?);
+            let nfat_arch: u32 = u32::from_le_bytes(data[4..8].try_into()?);
+            return Ok(FatHeader { magic, nfat_arch });
+        }
+        FAT_MAGIC_64 => {
+            // Big Endian, 64 Bit
+            println!("64 Bit; Big Endianness detected!");
+            let magic: u32 = u32::from_be_bytes(data[0..4].try_into()?);
+            let nfat_arch: u32 = u32::from_be_bytes(data[4..8].try_into()?);
+            return Ok(FatHeader { magic, nfat_arch });
+        }
+        _ => {
+            // Not a Fat binary
+            return Err("Not a fat Mach-O binary".into());
+        }
+
+    }
+    
+}
