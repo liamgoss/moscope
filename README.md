@@ -1,16 +1,4 @@
-> Note: This tool is a W.I.P. project I am developing to learn Rust, binary parsing, and Mach-O file specs. As such, this tool *currently* lacks useful parsing capabilities. while I continue to learn and expand upon this project. 
-
-# machochecko
-
-`machochecko` is a work-in-progress command-line tool written in Rust for inspecting **Mach-O** binaries, with support for **fat (universal) binaries**. It is designed as a learning project that aims to be *correct*, *explicit*, and *educational*, rather than a thin wrapper around existing tools. 
-
-The project currently focuses on:
-- Correct parsing of fat Mach-O headers
-- Endianness correctness (big-endian on disk vs little-endian host)
-- Architecture and subtype decoding (including `arm64e`)
-- Clean CLI ergonomics using `clap`
-
-
+# moscope — Mach-O static analysis and inspection toolkit
 
 ## Features (current)
 
@@ -30,7 +18,7 @@ The project currently focuses on:
 ## Example Usage
 
 ```bash
-cargo run -- /usr/bin/caffeinate
+cargo run -- /usr/bin/my_binary
 ```
 
 Example output (abridged):
@@ -51,27 +39,14 @@ Select architecture index: 1
 
 ## CLI
 
-Usage: `machochecko <BINARY>`
-
-
-
----
-
-## Design Notes
-
-- Fat headers are always parsed as **big-endian on disk**
-- Host endianness is detected and handled explicitly
-- ARM and ARM64 subtypes are treated as **separate namespaces**
-- `arm64e` detection properly accounts for pointer-auth ABI bits
-- CLI parsing is kept separate from binary parsing logic
+Usage: `moscope <BINARY>`
 
 
 ---
 
 ## Status
 
-This project is under active development and is currently **private**.
-APIs, output formats, and structure may change freely.
+This project is under active development. APIs, output formats, and structure may change freely.
 
 ---
 
@@ -80,4 +55,4 @@ APIs, output formats, and structure may change freely.
 - Rust (stable)
 - macOS (Mach-O binaries only)
 
----
+
