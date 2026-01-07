@@ -42,19 +42,19 @@ pub enum FatArch {
 pub fn read_fat_archs(
     data: &[u8],          // Entire file contents
     header: &FatHeader,   // Previously-parsed fat header
-    is_64: bool,          // Whether this is a fat_arch_64
+    is_fat_header_64: bool,          // Whether this is a fat_arch_64
     needs_swap: bool,     // Whether we must swap big-endian-on-disk fields into host order
 ) -> Result<Vec<FatArch>, Box<dyn Error>> {
     let mut archs = Vec::new();
     let mut offset = std::mem::size_of::<FatHeader>();
 
     println!(
-        "[fat] read_fat_archs: is_64={}, needs_swap={}, nfat_arch={}",
-        is_64, needs_swap, header.nfat_arch
+        "[fat] read_fat_archs: is_fat_header_64={}, needs_swap={}, nfat_arch={}",
+        is_fat_header_64, needs_swap, header.nfat_arch
     );
 
     for i in 0..header.nfat_arch {
-        if is_64 {
+        if is_fat_header_64 {
             let bytes = &data[offset..offset + std::mem::size_of::<FatArch64>()];
 
             let mut arch: FatArch64 =
@@ -138,7 +138,7 @@ pub fn read_fat_header(data: &[u8]) -> Result<FatHeader, Box<dyn Error>> {
     let nfat_arch_le_interpretation: u32 = u32::from_le_bytes(data[4..8].try_into()?);
 
     println!(
-        "[fat] nfat_arch interpreted as BE = {}, as LE = {} (LE is what caused your huge loop)",
+        "[fat] nfat_arch interpreted as BE = {}, as LE = {}",
         nfat_arch_be, nfat_arch_le_interpretation
     );
 

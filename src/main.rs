@@ -8,6 +8,8 @@ use colorize::AnsiColor;
 use clap::Parser;
 use std::path::PathBuf;
 
+use crate::macho::constants::FAT_CIGAM_64;
+
 
 #[derive(Parser, Debug)]
 #[command(
@@ -21,7 +23,7 @@ struct Cli {
     binary: PathBuf,
 }
 
-fn fat_binary_user_decision(data: &[u8], archs: &[fat::FatArch]) -> Result<(), Box<dyn Error>> {
+fn fat_binary_user_decision(archs: &[fat::FatArch]) -> Result<(), Box<dyn Error>> {
     // Prompt user if they want to analyze the Intel or Apple Silicon binary
     println!("{}", "Available architectures:".green());
     for (i, arch) in archs.iter().enumerate() {
@@ -55,6 +57,7 @@ fn fat_binary_user_decision(data: &[u8], archs: &[fat::FatArch]) -> Result<(), B
 
     println!("Selected architecture {}", choice);
 
+
     Ok(())
 }
 
@@ -82,29 +85,27 @@ fn main() -> Result<(), Box<dyn Error>> {
             // Determine FAT properties from the magic bytes
             let raw_magic: [u8; 4] = data[0..4].try_into()?;
 
-            let is_64 = matches!(
-                raw_magic,
-                constants::FAT_MAGIC_64 | constants::FAT_CIGAM_64,
-            );
+            let is_fat_header_64: bool = raw_magic == constants::FAT_MAGIC_64 || raw_magic == constants::FAT_CIGAM_64;
 
             
-            let needs_swap = cfg!(target_endian = "little");
+            //let needs_swap = raw_magic == constants::FAT_CIGAM || raw_magic == constants::FAT_CIGAM_64;
+            //let needs_swap = cfg!(target_endian = "little");
 
             println!(
-                "[main] raw_magic={:02x} {:02x} {:02x} {:02x}, is_64={}, needs_swap={}",
+                "[main] raw_magic={:02x} {:02x} {:02x} {:02x}, is_fat_header_64={}, needs_swap={}",
                 raw_magic[0], raw_magic[1], raw_magic[2], raw_magic[3],
-                is_64,
+                is_fat_header_64,
                 needs_swap
             );
 
             let archs = fat::read_fat_archs(
                 &data,
                 &fat_header,
-                is_64,
+                is_fat_header_64,
                 needs_swap,
             )?;
 
-            fat_binary_user_decision(&data, &archs)?;
+            fat_binary_user_decision(&archs)?;
         }
         Err(_) => {
             println!("{}", "Not a fat binary!".red());
