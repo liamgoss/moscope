@@ -2,6 +2,8 @@
 // Constants were taken from the wikipedia page on Dec 16, 2025
 // https://web.archive.org/web/20250000000000*/https://en.wikipedia.org/wiki/Mach-O
 
+
+
 //
 // ------------------------------------------------------------
 // Mach-O magic numbers (on-disk byte order)
@@ -26,20 +28,24 @@ pub const MH_CIGAM_64: [u8; 4] = [0xCF, 0xFA, 0xED, 0xFE];
 // ------------------------------------------------------------
 // Fat / Universal binary magic numbers
 // ------------------------------------------------------------
-// Fat headers are ALWAYS big-endian on disk.
 //
 
-/// Fat binary (32-bit architectures) — FAT_MAGIC = 0xcafebabe
+/// Fat binary (32 bit offsets/sizes in fat arch table), big-endian
 pub const FAT_MAGIC: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBE];
 
-/// Fat binary (32-bit architectures), little endian — FAT_CIGAM
+/// Fat binary (32 bit offsets/sizes in fat arch table), little-endian
 pub const FAT_CIGAM: [u8; 4] = [0xBE, 0xBA, 0xFE, 0xCA];
 
-/// Fat binary (64-bit architectures) — FAT_MAGIC_64 = 0xcafebabf
+/// Fat binary (64 bit offsets/sizes in fat arch table), big-endian
 pub const FAT_MAGIC_64: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBF];
 
-/// Fat binary (64-bit architectures), little endian — FAT_CIGAM_64
+/// Fat binary (64 bit offsets/sizes in fat arch table), little-endian
 pub const FAT_CIGAM_64: [u8; 4] = [0xBF, 0xBA, 0xFE, 0xCA];
+
+pub const FAT_HEADER_SIZE: usize = 8;
+pub const FAT_ARCH32_SIZE: usize = 20;
+pub const FAT_ARCH64_SIZE: usize = 32;
+
 
 //
 // ------------------------------------------------------------

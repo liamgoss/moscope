@@ -1,13 +1,23 @@
 // File Purpose: "what kind of Mach-O file is this?"
 /*
-Each Mach-O starts with
-+----------------+
-| mach_header_64 |
-+----------------+
-| load commands  |
-+----------------+
-| segments       |
-+----------------+
+Mach-O Header
++----------------+      +---------------+
+| mach_header_64 | -->  | Magic Number  |
++----------------+      +---------------+
+| load commands  |      |   CPU Type    |
++----------------+      +---------------+
+| segments       |      |  CPU Subtype  |
++----------------+      +---------------+
+                        |   File Type   |
+                        +---------------+
+                        | Num Load Cmds |
+                        +---------------+
+                        | Size of LC's  |
+                        +---------------+
+                        |     Flags     |
+                        +---------------+
+                        |    Reserved   |
+                        +---------------+
 
 */
 use super::constants;

@@ -1,3 +1,4 @@
+#![allow(warnings)]
 mod macho;
 
 use macho::fat;
@@ -13,9 +14,9 @@ use crate::macho::constants::FAT_CIGAM_64;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "checkomacho",
+    name = "moscope",
     version,
-    about = "Inspect Mach-O and FAT (universal) binaries"
+    about = "Mach-O static analysis and inspection toolkit"
 )]
 struct Cli {
     /// Path to the Mach-O binary to inspect
@@ -23,26 +24,45 @@ struct Cli {
     binary: PathBuf,
 }
 
+fn decode_arm64_subtype(cpusubtype: i32) -> &'static str {
+    let base = cpusubtype & !constants::CPU_SUBTYPE_MASK;
+    let has_ptrauth = (cpusubtype & constants::CPU_SUBTYPE_PTRAUTH_ABI) != 0;
+
+    if has_ptrauth {
+        "arm64e"
+    } else {
+        match base {
+            constants::CPU_SUBTYPE_ARM64_ALL |
+            constants::CPU_SUBTYPE_ARM64_V8 => "arm64",
+            _ =>  "arm64 (unknown subtype)",
+        }
+    }
+}
+
+fn display_arch(cputype: i32, cpusubtype: i32) -> (&'static str, &'static str) {
+    let cpu = constants::cpu_type_name(cputype);
+
+    let subtype = match cputype {
+        constants::CPU_TYPE_ARM64 => decode_arm64_subtype(cpusubtype),
+        _ => constants::cpu_subtype_name(cputype, cpusubtype),
+    };
+
+    (cpu, subtype)
+}
+
+
 fn fat_binary_user_decision(archs: &[fat::FatArch]) -> Result<(), Box<dyn Error>> {
     // Prompt user if they want to analyze the Intel or Apple Silicon binary
     println!("{}", "Available architectures:".green());
     for (i, arch) in archs.iter().enumerate() {
         match arch {
             fat::FatArch::Arch32(a) => {
-                println!(
-                    "{}: {} ({})",
-                    i,
-                    constants::cpu_type_name(a.cputype),
-                    constants::cpu_subtype_name(a.cputype, a.cpusubtype),
-                );
+                let (cpu, sub) = display_arch(a.cputype, a.cpusubtype);
+                println!("{i}: {cpu} ({sub})");
             }
             fat::FatArch::Arch64(a) => {
-                println!(
-                    "{}: {} ({})",
-                    i,
-                    constants::cpu_type_name(a.cputype),
-                    constants::cpu_subtype_name(a.cputype, a.cpusubtype),
-                );
+                let (cpu, sub) = display_arch(a.cputype, a.cpusubtype);
+                println!("{i}: {cpu} ({sub})");
             }
         }
     }
@@ -68,8 +88,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Reading header...");
 
     // Read the entire file into memory
-    // Then all parsers can work from the same byte slice
-    // but...hopefully it's not a large binary
+    // Then all fat header parse & mach-o header parser can work from the same byte slice
+    // but...hopefully it's not a large binary (need to change later)
     let data = std::fs::read(&cli.binary)
         .map_err(|e| format!("failed to read '{}': {}", cli.binary.display(), e))?;
     
@@ -77,34 +97,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Attempt to parse a FAT (universal) header
     // If successful, the file contains multiple Mach-O images
     // If it fails, the file is a thin/singular Mach-O binary
+
+
     match fat::read_fat_header(&data) {
         Ok(fat_header) => {
             println!("{}", "Fat binary detected:".green());
             println!("{:?}", fat_header);
 
-            // Determine FAT properties from the magic bytes
-            let raw_magic: [u8; 4] = data[0..4].try_into()?;
-
-            let is_fat_header_64: bool = raw_magic == constants::FAT_MAGIC_64 || raw_magic == constants::FAT_CIGAM_64;
-
-            
-            //let needs_swap = raw_magic == constants::FAT_CIGAM || raw_magic == constants::FAT_CIGAM_64;
-            //let needs_swap = cfg!(target_endian = "little");
-
-            println!(
-                "[main] raw_magic={:02x} {:02x} {:02x} {:02x}, is_fat_header_64={}, needs_swap={}",
-                raw_magic[0], raw_magic[1], raw_magic[2], raw_magic[3],
-                is_fat_header_64,
-                needs_swap
-            );
+            // Parse all architecture entries described by the fat header
 
             let archs = fat::read_fat_archs(
                 &data,
                 &fat_header,
-                is_fat_header_64,
-                needs_swap,
             )?;
 
+            // Present architectures to user for selection
             fat_binary_user_decision(&archs)?;
         }
         Err(_) => {
