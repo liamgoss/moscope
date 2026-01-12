@@ -2,3 +2,4 @@
 pub mod header;
 pub mod fat;
 pub mod constants;
+pub mod utils;

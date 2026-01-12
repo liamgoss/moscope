@@ -45,6 +45,8 @@ pub const FAT_CIGAM_64: [u8; 4] = [0xBF, 0xBA, 0xFE, 0xCA];
 pub const FAT_HEADER_SIZE: usize = 8;
 pub const FAT_ARCH32_SIZE: usize = 20;
 pub const FAT_ARCH64_SIZE: usize = 32;
+pub const MACH_HEADER32_SIZE: usize = 28;
+pub const MACH_HEADER64_SIZE: usize = 32;
 
 
 //
@@ -278,5 +280,32 @@ pub fn cpu_subtype_name(cputype: i32, cpusubtype: i32) -> &'static str {
         
         // Any CPU type we don't recognize
         _ => "Unknown",
+
+        // There's a lot more cpusubtypes defined above from wikipedia, IDK if we should have them all defined here or not
+        // Pros:....completeness
+        // Cons:....???
+        // TODO
+
+    }
+}
+
+pub fn filetype_name(filetype: u32) -> &'static str {
+    // Pulling these strings from Ghidra's docs 
+    // Why Ghidra docs and not also Wikipedia you ask? --> Ghidra's entries are more verbose
+    // https://web.archive.org/web/20251224153001/https://ghidra.re/ghidra_docs/api/ghidra/app/util/bin/format/macho/MachHeaderFileTypes.html
+    match filetype {
+        MH_OBJECT        => "Relocatable Object File [[MH_OBJECT]]", // Dear reader: don't confuse [[*]] with markdown formatting, I just think it's visually appealing
+        MH_EXECUTE       => "Demand Paged Executable File [[MH_EXECUTE]]",
+        MH_FVMLIB        => "Fixed VM Shared Library File [[MH_FVMLIB]]",
+        MH_CORE          => "Core File [[MH_CORE]]",
+        MH_PRELOAD       => "Preloaded Executable File [[MH_PRELOAD]]",
+        MH_DYLIB         => "Dynamically Bound Shared Library [[MH_DYLIB]]",
+        MH_DYLINKER      => "Dynamic Linker Editor [[MH_DYLINKER]]",
+        MH_BUNDLE        => "Dynamically Bound Bundle File [[MH_BUNDLE]]",
+        MH_DYLIB_STUB    => "Shared Library Stub for Static Linking Only, No Section Contents [[MH_DYLIB_STUB]]",
+        MH_DSYM          => "Linking Only, No Section Contents, Companion File w/ Only Debug Sections [[MH_DSYM]]",
+        MH_KEXT_BUNDLE   => "x86_64 kext (Kernel Extension) [[MH_KEXT_BUNDLE]]",
+        MH_FILESET      => "Kernel Cache Fileset [[MH_FILESET]]",
+        _ => "Unknown File Type",
     }
 }

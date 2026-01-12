@@ -24,6 +24,7 @@ struct Cli {
     binary: PathBuf,
 }
 
+
 fn decode_arm64_subtype(cpusubtype: i32) -> &'static str {
     let base = cpusubtype & !constants::CPU_SUBTYPE_MASK;
     let has_ptrauth = (cpusubtype & constants::CPU_SUBTYPE_PTRAUTH_ABI) != 0;
@@ -51,8 +52,8 @@ fn display_arch(cputype: i32, cpusubtype: i32) -> (&'static str, &'static str) {
 }
 
 
-fn fat_binary_user_decision(archs: &[fat::FatArch]) -> Result<(), Box<dyn Error>> {
-    // Prompt user if they want to analyze the Intel or Apple Silicon binary
+fn fat_binary_user_decision<'a>(archs: &'a [fat::FatArch]) -> Result<&'a fat::FatArch, Box<dyn Error>> {
+    // Prompt user if they want to analyze the Intel or Apple Silicon binary (or whichever of the `n`` binaries present)
     println!("{}", "Available architectures:".green());
     for (i, arch) in archs.iter().enumerate() {
         match arch {
@@ -73,19 +74,17 @@ fn fat_binary_user_decision(archs: &[fat::FatArch]) -> Result<(), Box<dyn Error>
 
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
-    let choice: usize = input.trim().parse()?;
-
-    println!("Selected architecture {}", choice);
+    let index: usize = input.trim().parse()?;
 
 
-    Ok(())
+    Ok(&archs[index]) // Return a reference, fat arch lives as long as `archs` does which is also a reference from earlier so should be fine
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
     let cli = Cli::parse();
 
-    println!("Reading header...");
+    println!("Checking for universal binary...");
 
     // Read the entire file into memory
     // Then all fat header parse & mach-o header parser can work from the same byte slice
@@ -99,7 +98,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // If it fails, the file is a thin/singular Mach-O binary
 
 
-    match fat::read_fat_header(&data) {
+    let macho_slice = match fat::read_fat_header(&data) {
         Ok(fat_header) => {
             println!("{}", "Fat binary detected:".green());
             println!("{:?}", fat_header);
@@ -112,13 +111,34 @@ fn main() -> Result<(), Box<dyn Error>> {
             )?;
 
             // Present architectures to user for selection
-            fat_binary_user_decision(&archs)?;
+            let selected_arch = fat_binary_user_decision(&archs)?;
+
+            let slice: header::MachOSlice = match selected_arch {
+                fat::FatArch::Arch32(a) => header::MachOSlice {
+                    offset: a.offset as u64, // u32 offset but it's as a u64
+                    size: Some(a.size as u64),
+                },
+                fat::FatArch::Arch64(a) => header::MachOSlice {
+                    offset: a.offset, // u64 offset
+                    size: Some(a.size),
+                },
+            };
+
+            slice
+
+            // end of fat binary specific code, proceed to thin binary code
+
         }
         Err(_) => {
-            println!("{}", "Not a fat binary!".red());
-            // handle_binary(&data)?;
+            println!("{}", "No universal binary detected!".yellow());
+            header::MachOSlice {
+                offset: 0, // Thin binary -> no offset, start right away
+                size: None, // Irrelevant
+            }
         }
     };
 
+    let thin_header = header::read_thin_header(&data, macho_slice)?;
+    println!("Done!");
     Ok(())
 }

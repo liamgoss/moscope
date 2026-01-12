@@ -1,10 +1,29 @@
 // File Purpose: "Which Mach-O should be parsed?"
 
+/*
++-------------------+
+| fat_header        |  <-- global container metadata
++-------------------+
+| fat_arch[0]       |  <-- where Mach-O #0 lives
++-------------------+
+| fat_arch[1]       |  <-- where Mach-O #1 lives
++-------------------+
+| ...               |
++-------------------+
+| Mach-O #0 bytes   |  <-- offset from fat_arch[0]
++-------------------+
+| Mach-O #1 bytes   |  <-- offset from fat_arch[1]
++-------------------+
+*/
+
+
 use std::error::Error;
 
 use crate::macho::constants::{FAT_ARCH64_SIZE, FAT_MAGIC};
 
 use super::constants;
+use super::utils;
+
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -34,7 +53,6 @@ pub struct FatArch64 {
     pub reserved: u32,
 }
 
-#[repr(C)]
 #[derive(Debug)]
 pub enum FatArch {
     Arch32(FatArch32),
@@ -60,79 +78,12 @@ impl FatKind {
 
 }
 
-
-trait FromEndianBytes: Sized {
-    const SIZE: usize;
-
-    fn from_be(bytes: &[u8]) -> Result<Self, Box<dyn Error>>;
-    fn from_le(bytes: &[u8]) -> Result<Self, Box<dyn Error>>;
-}
-
-impl FromEndianBytes for u32 {
-    const SIZE: usize = 4;
-
-    fn from_be(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        Ok(u32::from_be_bytes(bytes.try_into()?))
-    }
-    fn from_le(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        Ok(u32::from_le_bytes(bytes.try_into()?))
-    }
-}
-
-impl FromEndianBytes for i32 {
-    const SIZE: usize = 4;
-
-    fn from_be(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        Ok(i32::from_be_bytes(bytes.try_into()?))
-    }
-    fn from_le(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        Ok(i32::from_le_bytes(bytes.try_into()?))
-    }
-}
-
-impl FromEndianBytes for u64 {
-    const SIZE: usize = 8;
-
-    fn from_be(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        Ok(u64::from_be_bytes(bytes.try_into()?))
-    }
-    fn from_le(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        Ok(u64::from_le_bytes(bytes.try_into()?))
-    }
-}
-
-
-/*  
-    Instead of a ton of:
-    
-    let cputype_bytes: [u8; 4] = data[offset + 0 .. offset + 4].try_into()?;
-    let cputype = if header.kind.is_be() {
-        i32::from_be_bytes(cputype_bytes)
-    } else {
-        i32::from_le_bytes(cputype_bytes)
-    };
-
-    For each var and type, we can instead use the trait and implementations to save us the copy and paste hell
-*/
-fn bytes_to<T: FromEndianBytes>(kind: FatKind, data: &[u8]) -> Result<T, Box<dyn Error>> {
-    if data.len() <T::SIZE {
-        return Err("buffer too small".into());
-    }
-    if kind.is_be() {
-        T::from_be(&data[..T::SIZE])
-    } else {
-        T::from_le(&data[..T::SIZE])
-    }
-}
-
-
-
 pub fn read_fat_archs(
     data: &[u8],            // Entire file contents
     header: &FatHeader,     // Previously-parsed fat header
 ) -> Result<Vec<FatArch>, Box<dyn Error>> {
     let mut archs = Vec::new();
-    let mut offset = constants::FAT_HEADER_SIZE; // Start on the on disk fat header
+    let mut offset: usize = constants::FAT_HEADER_SIZE; // Start on the on disk fat header
 
 
     for i in 0..header.nfat_arch {
@@ -147,12 +98,12 @@ pub fn read_fat_archs(
             }
 
             let base = offset;
-            let cputype: i32 = bytes_to(header.kind, &data[base + 0..])?;
-            let cpusubtype: i32 = bytes_to(header.kind, &data[base + 4..])?;
-            let arch_offset: u64 = bytes_to(header.kind, &data[base + 8..])?;
-            let size: u64 = bytes_to(header.kind, &data[base + 16..])?;
-            let align: u32 = bytes_to(header.kind, &data[base + 24..])?;
-            let reserved: u32 = bytes_to(header.kind, &data[base + 28..])?;
+            let cputype: i32 = utils::bytes_to(header.kind.is_be(), &data[base + 0..])?;
+            let cpusubtype: i32 = utils::bytes_to(header.kind.is_be(), &data[base + 4..])?;
+            let arch_offset: u64 = utils::bytes_to(header.kind.is_be(), &data[base + 8..])?;
+            let size: u64 = utils::bytes_to(header.kind.is_be(), &data[base + 16..])?;
+            let align: u32 = utils::bytes_to(header.kind.is_be(), &data[base + 24..])?;
+            let reserved: u32 = utils::bytes_to(header.kind.is_be(), &data[base + 28..])?;
 
             let arch = FatArch64 { 
                 cputype, 
@@ -176,11 +127,11 @@ pub fn read_fat_archs(
             }
 
             let base = offset;
-            let cputype: i32 = bytes_to(header.kind, &data[base + 0..])?;
-            let cpusubtype: i32 = bytes_to(header.kind, &data[base + 4..])?;
-            let arch_offset: u32 = bytes_to(header.kind, &data[base + 8..])?;
-            let size: u32 = bytes_to(header.kind, &data[base + 12..])?;
-            let align: u32 = bytes_to(header.kind, &data[base + 16..])?;
+            let cputype: i32 = utils::bytes_to(header.kind.is_be(), &data[base + 0..])?;
+            let cpusubtype: i32 = utils::bytes_to(header.kind.is_be(), &data[base + 4..])?;
+            let arch_offset: u32 = utils::bytes_to(header.kind.is_be(), &data[base + 8..])?;
+            let size: u32 = utils::bytes_to(header.kind.is_be(), &data[base + 12..])?;
+            let align: u32 = utils::bytes_to(header.kind.is_be(), &data[base + 16..])?;
             
 
             let arch = FatArch32 { 
@@ -219,9 +170,9 @@ pub fn read_fat_header(data: &[u8]) -> Result<FatHeader, Box<dyn Error>> {
 
     let raw_magic_bytes: [u8; 4] = data[0..4].try_into()?;
 
-    let kind = match classify_fat_magic(raw_magic_bytes) {
+    let kind: FatKind = match classify_fat_magic(raw_magic_bytes) {
         Some(kind) => kind,
-        None => return Err("Not a fat Mach-O binary".into()),
+        None => return Err("Not a valid fat Mach-O binary".into()),
     };
 
     
