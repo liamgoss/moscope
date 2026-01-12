@@ -1,4 +1,5 @@
-use crate::macho::{constants::MH_MAGIC, utils};
+use std::error::Error;
+use super::constants;
 
 // File Purpose: "what kind of Mach-O file is this?"
 /*
@@ -22,9 +23,6 @@ Mach-O Header
                         +---------------+
 
 */
-use super::constants;
-use std::error::Error;
-
 
 pub struct MachOSlice {
     pub offset: u64, // Where this Mach-O binary begins

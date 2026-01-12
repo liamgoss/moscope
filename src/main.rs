@@ -1,15 +1,16 @@
 #![allow(warnings)]
 mod macho;
 
+use std::error::Error;
+use std::path::PathBuf;
+
 use macho::fat;
 use macho::header;
 use macho::constants;
-use std::error::Error;
+
 use colorize::AnsiColor;
 use clap::Parser;
-use std::path::PathBuf;
 
-use crate::macho::constants::FAT_CIGAM_64;
 
 
 #[derive(Parser, Debug)]
@@ -101,7 +102,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let macho_slice = match fat::read_fat_header(&data) {
         Ok(fat_header) => {
             println!("{}", "Fat binary detected:".green());
-            println!("{:?}", fat_header);
+            //println!("{:?}", fat_header);
 
             // Parse all architecture entries described by the fat header
 

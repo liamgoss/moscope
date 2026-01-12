@@ -1,3 +1,8 @@
+use std::error::Error;
+
+use super::constants;
+use super::utils;
+
 // File Purpose: "Which Mach-O should be parsed?"
 
 /*
@@ -17,12 +22,7 @@
 */
 
 
-use std::error::Error;
 
-use crate::macho::constants::{FAT_ARCH64_SIZE, FAT_MAGIC};
-
-use super::constants;
-use super::utils;
 
 
 #[repr(C)]

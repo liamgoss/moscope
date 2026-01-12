@@ -214,6 +214,7 @@ pub fn cpu_type_name(cputype: i32) -> &'static str {
         CPU_TYPE_X86 => "x86",
         CPU_TYPE_ARM => "ARM",
         CPU_TYPE_POWERPC => "PowerPC",
+        CPU_TYPE_RISCV => "RISC-V",
         _ => "Unknown",
     }
 }
