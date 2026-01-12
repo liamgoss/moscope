@@ -1,4 +1,5 @@
 use std::error::Error;
+use super::utils;
 use super::constants;
 
 // File Purpose: "what kind of Mach-O file is this?"

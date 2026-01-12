@@ -66,23 +66,23 @@ pub const CPU_ARCH_ABI64_32: i32 = 0x0200_0000;
 // CPU types
 // ------------------------------------------------------------
 
-pub const CPU_TYPE_VAX: i32        = 0x00000001;
-pub const CPU_TYPE_ROMP: i32       = 0x00000002;
-pub const CPU_TYPE_NS32032: i32    = 0x00000004;
-pub const CPU_TYPE_NS32332: i32    = 0x00000005;
-pub const CPU_TYPE_MC680X0: i32    = 0x00000006;
-pub const CPU_TYPE_X86: i32        = 0x00000007;
-pub const CPU_TYPE_MIPS: i32       = 0x00000008;
-pub const CPU_TYPE_NS32352: i32    = 0x00000009;
-pub const CPU_TYPE_HPPA: i32       = 0x0000000B;
-pub const CPU_TYPE_ARM: i32        = 0x0000000C;
-pub const CPU_TYPE_MC88000: i32    = 0x0000000D;
-pub const CPU_TYPE_SPARC: i32      = 0x0000000E;
-pub const CPU_TYPE_I860_BIG: i32   = 0x0000000F;
-pub const CPU_TYPE_I860_LITTLE: i32= 0x00000010; // or DEC Alpha
-pub const CPU_TYPE_RS6000: i32     = 0x00000011;
-pub const CPU_TYPE_POWERPC: i32    = 0x00000012;
-pub const CPU_TYPE_RISCV: i32      = 0x00000018;
+pub const CPU_TYPE_VAX: i32         = 0x00000001;
+pub const CPU_TYPE_ROMP: i32        = 0x00000002;
+pub const CPU_TYPE_NS32032: i32     = 0x00000004;
+pub const CPU_TYPE_NS32332: i32     = 0x00000005;
+pub const CPU_TYPE_MC680X0: i32     = 0x00000006;
+pub const CPU_TYPE_X86: i32         = 0x00000007;
+pub const CPU_TYPE_MIPS: i32        = 0x00000008;
+pub const CPU_TYPE_NS32352: i32     = 0x00000009;
+pub const CPU_TYPE_HPPA: i32        = 0x0000000B;
+pub const CPU_TYPE_ARM: i32         = 0x0000000C;
+pub const CPU_TYPE_MC88000: i32     = 0x0000000D;
+pub const CPU_TYPE_SPARC: i32       = 0x0000000E;
+pub const CPU_TYPE_I860_BIG: i32    = 0x0000000F;
+pub const CPU_TYPE_I860_LITTLE: i32 = 0x00000010; // or DEC Alpha
+pub const CPU_TYPE_RS6000: i32      = 0x00000011;
+pub const CPU_TYPE_POWERPC: i32     = 0x00000012;
+pub const CPU_TYPE_RISCV: i32       = 0x00000018;
 
 /// Common combined CPU types
 pub const CPU_TYPE_X86_64: i32 = CPU_TYPE_X86 | CPU_ARCH_ABI64;
@@ -141,27 +141,27 @@ pub const CPU_SUBTYPE_ARM64E: i32    = 2;
 // x86 CPU subtypes
 // ------------------------------------------------------------
 
-pub const CPU_SUBTYPE_X86_ALL: i32       = 0x00000003;
-pub const CPU_SUBTYPE_X86_486: i32       = 0x00000004;
-pub const CPU_SUBTYPE_X86_486SX: i32     = 0x00000084;
-pub const CPU_SUBTYPE_X86_PENTIUM_M5: i32= 0x00000056;
-pub const CPU_SUBTYPE_X86_CELERON: i32   = 0x00000067;
-pub const CPU_SUBTYPE_X86_CELERON_MOBILE: i32 = 0x00000077;
-pub const CPU_SUBTYPE_X86_PENTIUM_3: i32 = 0x00000008;
-pub const CPU_SUBTYPE_X86_PENTIUM_3_M: i32=0x00000018;
-pub const CPU_SUBTYPE_X86_PENTIUM_3_XEON: i32=0x00000028;
-pub const CPU_SUBTYPE_X86_PENTIUM_4: i32 = 0x0000000A;
-pub const CPU_SUBTYPE_X86_ITANIUM: i32   = 0x0000000B;
-pub const CPU_SUBTYPE_X86_ITANIUM_2: i32 = 0x0000001B;
-pub const CPU_SUBTYPE_X86_XEON: i32      = 0x0000000C;
-pub const CPU_SUBTYPE_X86_XEON_MP: i32   = 0x0000001C;
+pub const CPU_SUBTYPE_X86_ALL: i32              = 0x00000003;
+pub const CPU_SUBTYPE_X86_486: i32              = 0x00000004;
+pub const CPU_SUBTYPE_X86_486SX: i32            = 0x00000084;
+pub const CPU_SUBTYPE_X86_PENTIUM_M5: i32       = 0x00000056;
+pub const CPU_SUBTYPE_X86_CELERON: i32          = 0x00000067;
+pub const CPU_SUBTYPE_X86_CELERON_MOBILE: i32   = 0x00000077;
+pub const CPU_SUBTYPE_X86_PENTIUM_3: i32        = 0x00000008;
+pub const CPU_SUBTYPE_X86_PENTIUM_3_M: i32      = 0x00000018;
+pub const CPU_SUBTYPE_X86_PENTIUM_3_XEON: i32   = 0x00000028;
+pub const CPU_SUBTYPE_X86_PENTIUM_4: i32        = 0x0000000A;
+pub const CPU_SUBTYPE_X86_ITANIUM: i32          = 0x0000000B;
+pub const CPU_SUBTYPE_X86_ITANIUM_2: i32        = 0x0000001B;
+pub const CPU_SUBTYPE_X86_XEON: i32             = 0x0000000C;
+pub const CPU_SUBTYPE_X86_XEON_MP: i32          = 0x0000001C;
 
 //
 // ------------------------------------------------------------
 // Mach-O file types
 // ------------------------------------------------------------
-
-pub const MH_OBJECT: u32      = 0x00000001;
+// see filetype_name() below for explanations 
+pub const MH_OBJECT: u32      = 0x00000001; 
 pub const MH_EXECUTE: u32     = 0x00000002;
 pub const MH_FVMLIB: u32      = 0x00000003;
 pub const MH_CORE: u32        = 0x00000004;
@@ -179,35 +179,102 @@ pub const MH_FILESET: u32     = 0x0000000C;
 // Mach-O header flags
 // ------------------------------------------------------------
 
-pub const MH_NOUNDEFS: u32                = 1 << 0;
-pub const MH_INCRLINK: u32                = 1 << 1;
-pub const MH_DYLDLINK: u32                = 1 << 2;
-pub const MH_BINDATLOAD: u32              = 1 << 3;
-pub const MH_PREBOUND: u32                = 1 << 4;
-pub const MH_SPLIT_SEGS: u32              = 1 << 5;
-pub const MH_LAZY_INIT: u32               = 1 << 6;
-pub const MH_TWOLEVEL: u32                = 1 << 7;
-pub const MH_FORCE_FLAT: u32              = 1 << 8;
-pub const MH_NOMULTIDEFS: u32             = 1 << 9;
-pub const MH_NOFIXPREBINDING: u32         = 1 << 10;
-pub const MH_PREBINDABLE: u32             = 1 << 11;
-pub const MH_ALLMODSBOUND: u32            = 1 << 12;
-pub const MH_SUBSECTIONS_VIA_SYMBOLS: u32 = 1 << 13;
-pub const MH_CANONICAL: u32               = 1 << 14;
-pub const MH_WEAK_DEFINES: u32             = 1 << 15;
-pub const MH_BINDS_TO_WEAK: u32           = 1 << 16;
-pub const MH_ALLOW_STACK_EXECUTION: u32   = 1 << 17;
-pub const MH_ROOT_SAFE: u32               = 1 << 18;
-pub const MH_SETUID_SAFE: u32             = 1 << 19;
-pub const MH_NO_REEXPORTED_DYLIBS: u32    = 1 << 20;
-pub const MH_PIE: u32                     = 1 << 21;
-pub const MH_DEAD_STRIPPABLE_DYLIB: u32   = 1 << 22;
-pub const MH_HAS_TLV_DESCRIPTORS: u32     = 1 << 23;
-pub const MH_NO_HEAP_EXECUTION: u32       = 1 << 24;
-pub const MH_APP_EXTENSION_SAFE: u32      = 1 << 25;
-pub const MH_NLIST_OUTOFSYNC_WITH_DYLDINFO: u32 = 1 << 26;
-pub const MH_SIM_SUPPORT: u32             = 1 << 27;
-pub const MH_DYLIB_IN_CACHE: u32          = 1 << 31;
+pub const MH_NOUNDEFS: u32                      = 1 << 0;     // the object file has no undefined references
+pub const MH_INCRLINK: u32                      = 1 << 1;     // the object file is the output of an incremental link against a base file and can't be link edited again
+pub const MH_DYLDLINK: u32                      = 1 << 2;     // the object file is input for the dynamic linker and can't be statically link edited again
+pub const MH_BINDATLOAD: u32                    = 1 << 3;     // the object file's undefined references are bound by the dynamic linker when loaded.
+pub const MH_PREBOUND: u32                      = 1 << 4;     // the file has its dynamic undefined references prebound.
+pub const MH_SPLIT_SEGS: u32                    = 1 << 5;     // the file has its read-only and read-write segments split
+pub const MH_LAZY_INIT: u32                     = 1 << 6;     // the shared library init routine is to be run lazily via catching memory faults to its writeable segments (obsolete)
+pub const MH_TWOLEVEL: u32                      = 1 << 7;     // the image is using two-level name space bindings
+pub const MH_FORCE_FLAT: u32                    = 1 << 8;     // the executable is forcing all images to use flat name space bindings
+pub const MH_NOMULTIDEFS: u32                   = 1 << 9;     // this umbrella guarantees no multiple definitions of symbols in its sub-images so the two-level namespace hints can always be used.
+pub const MH_NOFIXPREBINDING: u32               = 1 << 10;    // do not have dyld notify the prebinding agent about this executable
+pub const MH_PREBINDABLE: u32                   = 1 << 11;    // the binary is not prebound but can have its prebinding redone. only used when MH_PREBOUND is not set.
+pub const MH_ALLMODSBOUND: u32                  = 1 << 12;    // indicates that this binary binds to all two-level namespace modules of its dependent libraries. only used when MH_PREBINDABLE and MH_TWOLEVEL are both set.
+pub const MH_SUBSECTIONS_VIA_SYMBOLS: u32       = 1 << 13;    // safe to divide up the sections into sub-sections via symbols for dead code stripping
+pub const MH_CANONICAL: u32                     = 1 << 14;    // the binary has been canonicalized via the unprebind operation
+pub const MH_WEAK_DEFINES: u32                  = 1 << 15;    // the final linked image contains external weak symbols
+pub const MH_BINDS_TO_WEAK: u32                 = 1 << 16;    // the final linked image uses weak symbols
+pub const MH_ALLOW_STACK_EXECUTION: u32         = 1 << 17;    // When this bit is set, all stacks in the task will be given stack execution privilege. Only used in MH_EXECUTE filetypes.
+pub const MH_ROOT_SAFE: u32                     = 1 << 18;    // When this bit is set, the binary declares it is safe for use in processes with uid zero
+pub const MH_SETUID_SAFE: u32                   = 1 << 19;    // When this bit is set, the binary declares it is safe for use in processes when issetugid() is true
+pub const MH_NO_REEXPORTED_DYLIBS: u32          = 1 << 20;    // When this bit is set on a dylib, the static linker does not need to examine dependent dylibs to see if any are re-exported
+pub const MH_PIE: u32                           = 1 << 21;    // When this bit is set, the OS will load the main executable at a random address. Only used in MH_EXECUTE filetypes.
+pub const MH_DEAD_STRIPPABLE_DYLIB: u32         = 1 << 22;    // Only for use on dylibs. When linking against a dylib that has this bit set, the static linker will automatically not create a LC_LOAD_DYLIB load command to the dylib if no symbols are being referenced from the dylib.
+pub const MH_HAS_TLV_DESCRIPTORS: u32           = 1 << 23;    // Contains a section of type S_THREAD_LOCAL_VARIABLES
+pub const MH_NO_HEAP_EXECUTION: u32             = 1 << 24;    // When this bit is set, the OS will run the main executable with a non-executable heap even on platforms (e.g. i386) that don't require it. Only used in MH_EXECUTE filetypes.
+pub const MH_APP_EXTENSION_SAFE: u32            = 1 << 25;    // The code was linked for use in an application extension.
+pub const MH_NLIST_OUTOFSYNC_WITH_DYLDINFO: u32 = 1 << 26;    // The external symbols listed in the nlist symbol table do not include all the symbols listed in the dyld info.
+pub const MH_SIM_SUPPORT: u32                   = 1 << 27;    // Allow LC_MIN_VERSION_MACOS and LC_BUILD_VERSION load commands with the platforms macOS, macCatalyst, iOSSimulator, tvOSSimulator and watchOSSimulator.
+pub const MH_IMPLICIT_PAGEZERO: u32             = 1 << 28;    // main executable has no __PAGEZERO segment. Instead, loader (xnu) will load program high and block out all memory below it.
+pub const MH_DYLIB_IN_CACHE: u32                = 1 << 31;    // Only for use on dylibs. When this bit is set, the dylib is part of the dyld shared cache, rather than loose in the filesystem.
+
+//
+// ------------------------------------------------------------
+// Load Commands
+// ------------------------------------------------------------
+pub const LC_REQ_DYLD: u32                  = 0x8000_0000; // When a new LC is added that need to be understood by the dynamic linker, the LC_REQ_DYLD will be OR'ed into the LC constant
+pub const LC_SEGMENT: u32                   = 0x01; // segment of this file to be mapped
+pub const LC_SYMTAB: u32                    = 0x02; // link-edit stab symbol table info
+pub const LC_SYMSEG: u32                    = 0x03; // link-edit gdb symbol table info
+pub const LC_THREAD: u32                    = 0x04; // thread
+pub const LC_UNIXTHREAD: u32                = 0x05; // unix thread (includes a stack)
+pub const LC_LOADFVMLIB: u32                = 0x06; // load a specified fixed VM shared library
+pub const LC_IDFVMLIB: u32                  = 0x07; // fixed VM shared library identification
+pub const LC_IDENT: u32                     = 0x08; // object identification info (obsolete)
+pub const LC_FVMFILE: u32                   = 0x09; // fixed VM file inclusion (internal use)
+pub const LC_PREPAGE: u32                   = 0x0A; // prepage command (internal use)
+pub const LC_DSYMTAB: u32                   = 0x0B; // dynamic link-edit symbol table info
+pub const LC_LOAD_DYLIB: u32                = 0x0C; // load a dynamically linked shared library
+pub const LC_ID_DYLIB: u32                  = 0x0D; // dynamically linked shared lib ident
+pub const LC_LOAD_DYLINKER: u32             = 0x0E; // load a dynamic linker
+pub const LC_ID_DYLINKER: u32               = 0x0F; // dynamic linker identification
+pub const LC_PREBOUND_DYLIB: u32            = 0x10; // modules prebound for a dynamically linked shared library
+pub const LC_ROUTINES: u32                  = 0x11; // image routines
+pub const LC_SUB_FRAMEWORK: u32             = 0x12; // sub framework
+pub const LC_SUB_UMBRELLA: u32              = 0x13; // sub umbrella
+pub const LC_SUB_CLIENT: u32                = 0x14; // sub client
+pub const LC_SUB_LIBRARY: u32               = 0x15; // sub library
+pub const LC_TWOLEVEL_HINTS: u32            = 0x16; // two-level namespace lookup hints
+pub const LC_PREBIND_CKSUM: u32             = 0x17; // prebind checksum
+pub const LC_LOAD_WEAK_DYLIB: u32           = 0x18; // OR LC_REQ_DYLD // load a dynamically linked shared library that is allowed to be missing
+pub const LC_SEGMENT_64: u32                = 0x19; // 64-bit segment of this file to be mapped
+pub const LC_ROUTINES_64: u32               = 0x1A; // 64-bit image routines
+pub const LC_UUID: u32                      = 0x1B; // the uuid
+pub const LC_RPATH: u32                     = 0x1C; // OR LC_REQ_DYLD // runpath additions
+pub const LC_CODE_SIGNATURE: u32            = 0x1D; // local of code signature
+pub const LC_SEGMENT_SPLIT_INFO: u32        = 0x1E; // local of info to split segments
+pub const LC_REEXPORT_DYLIB: u32            = 0x1F; // OR LC_REQ_DYLD // load and re-export dylib
+pub const LC_LAZY_LOAD_DYLIB: u32           = 0x20; // delay load of dylib until first use
+pub const LC_ENCRYPTION_INFO: u32           = 0x21; // encrypted segment information
+pub const LC_DYLD_INFO: u32                 = 0x22; // compressed dyld information
+pub const LC_DYLD_INFO_ONLY: u32            = 0x22; // OR LC_REQ_DYLD // compressed dyld information only
+pub const LC_LOAD_UPWARD_DYLIB: u32         = 0x23; // OR LC_REQ_DYLD // load upward dylib
+pub const LC_VERSION_MIN_MACOSX: u32        = 0x24; // build for MacOSX min OS version
+pub const LC_VERSION_MIN_IPHONEOS: u32      = 0x25; // build for iPhoneOS min OS version
+pub const LC_FUNCTION_STARTS: u32           = 0x26; // compressed table of function start addresses
+pub const LC_DYLD_ENVIRONMENT: u32          = 0x27; // string for dyld to treat like environment variable
+pub const LC_MAIN: u32                      = 0x28; // OR LC_REQ_DYLD // replacement for LC_UNIXTHREAD
+pub const LC_DATA_IN_CODE: u32              = 0x29; // table of non-instructions in __text
+pub const LC_SOURCE_VERSION: u32            = 0x2A; // source version used to build binary
+pub const LC_DYLIB_CODE_SIGN_DRS: u32       = 0x2B; // Code signing DRs copied from linked dylibs
+pub const LC_ENCRYPTION_INFO_64: u32        = 0x2C; // 64-bit encrypted segment information
+pub const LC_LINKER_OPTION: u32             = 0x2D; // linker options in MH_OBJECT files
+pub const LC_LINKER_OPTIMIZATION_HINT: u32  = 0x2E; // optimization hints in MH_OBJECT files
+pub const LC_VERSION_MIN_TVOS: u32          = 0x2F; // build for Apple TV min OS version
+pub const LC_VERSION_MIN_WATCHOS: u32       = 0x30; // build for Watch min OS version
+pub const LC_NOTE: u32                      = 0x31; // arbitrary data included within a Mach-O file
+pub const LC_BUILD_VERSION: u32             = 0x32; // build for platform min OS version
+pub const LC_DYLD_EXPORTS_TRIE: u32         = 0x33; // OR LC_REQ_DYLD // used with linkedit_data_command, payload is trie
+pub const LC_DYLD_CHAINED_FIXUPS: u32       = 0x34; // OR LC_REQ_DYLD // used with linkedit_data_command
+pub const LC_FILESET_ENTRY: u32             = 0x35; // OR LC_REQ_DYLD // used with fileset_entry_command
+pub const LC_ATOM_INFO: u32                 = 0x36; // used with linkedit_data_command
+pub const LC_FUNCTION_VARIANTS: u32         = 0x37; // used with linkedit_data_command
+pub const LC_FUNCTION_VARIANT_FIXED: u32    = 0x38; // used with linkedit_data_command
+pub const LC_TARGET_TRIPLE: u32             = 0x39; // target triple used to compile
+
+
 
 pub fn cpu_type_name(cputype: i32) -> &'static str {
     match cputype & !CPU_ARCH_ABI64 {
