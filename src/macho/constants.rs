@@ -1,7 +1,7 @@
 // File Purpose: Mach-O and Fat (Universal) binary constants.
 // Constants were taken from the wikipedia page on Dec 16, 2025
 // https://web.archive.org/web/20250000000000*/https://en.wikipedia.org/wiki/Mach-O
-
+// NOTE: In several cases, data was taken from this site and given to ChatGPT 5.2 to convert to our `pub const ....` lines to avoid excess manual typing
 
 
 //
@@ -214,7 +214,7 @@ pub const MH_DYLIB_IN_CACHE: u32                = 1 << 31;    // Only for use on
 // ------------------------------------------------------------
 // Load Commands
 // ------------------------------------------------------------
-pub const LC_REQ_DYLD: u32                  = 0x8000_0000; // When a new LC is added that need to be understood by the dynamic linker, the LC_REQ_DYLD will be OR'ed into the LC constant
+pub const LC_REQ_DYLD: u32                  = 0x8000_0000; // When a new LC is added that need to be understood by the dynamic linker, the LC_REQ_DYLD will be BITWISE OR'ed into the LC constant
 pub const LC_SEGMENT: u32                   = 0x01; // segment of this file to be mapped
 pub const LC_SYMTAB: u32                    = 0x02; // link-edit stab symbol table info
 pub const LC_SYMSEG: u32                    = 0x03; // link-edit gdb symbol table info
@@ -315,7 +315,7 @@ pub fn cpu_subtype_name(cputype: i32, cpusubtype: i32) -> &'static str {
                 
                 match subtype {
                     CPU_SUBTYPE_ARM64_V8 => "arm64", // 1
-                    CPU_SUBTYPE_ARM64_ALL => "arm64 (generic)", // 0
+                    CPU_SUBTYPE_ARM64_ALL => "arm64 (ARM64_ALL)", // 0
                     _ => "ARM64 (unknown subtype)",
                 }
             }

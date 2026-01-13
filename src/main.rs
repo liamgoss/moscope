@@ -11,6 +11,8 @@ use macho::constants;
 use colorize::AnsiColor;
 use clap::Parser;
 
+use crate::macho::load_commands;
+
 
 
 #[derive(Parser, Debug)]
@@ -139,7 +141,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let thin_header = header::read_thin_header(&data, macho_slice)?;
+    let thin_header: header::ParsedMachOHeader = header::read_thin_header(&data, &macho_slice)?;
+
+    use std::mem::size_of;
+
+    // Determine the variant we have (word size, endianness, etc.) so we can properly read the load commands
+    let (header_size, ncmds, word_size, is_be) = match &thin_header.header {
+        header::MachOHeader::Header32(h) => (
+            std::mem::size_of::<header::MachHeader32>(),
+            h.ncmds,
+            32,
+            thin_header.kind.is_be(),
+        ),
+        header::MachOHeader::Header64(h) => (
+            std::mem::size_of::<header::MachHeader64>(),
+            h.ncmds,
+            64,
+            thin_header.kind.is_be(),
+        ),
+    };
+
+    let load_command_offset = macho_slice.offset as usize + header_size;
+    let load_commands = load_commands::read_load_commands(&data, load_command_offset as u32, ncmds, word_size, is_be)?;
+    load_commands::print_load_commands(&load_commands);
+
     println!("Done!");
     Ok(())
 }

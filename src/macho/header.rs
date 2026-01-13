@@ -1,6 +1,8 @@
 use std::error::Error;
 use super::utils;
 use super::constants;
+use colorize::AnsiColor;
+
 
 // File Purpose: "what kind of Mach-O file is this?"
 /*
@@ -60,6 +62,12 @@ pub struct MachHeader32 {
 pub enum MachOHeader {
     Header32(MachHeader32),
     Header64(MachHeader64),
+
+}
+#[derive(Debug)]
+pub struct ParsedMachOHeader {
+    pub kind: MachOKind,
+    pub header: MachOHeader,
 }
 
 
@@ -107,18 +115,24 @@ fn print_common_header(
     flags: u32,
 ) {
     println!();
-    println!("Mach-O Header Summary");
+    println!("{}", "Mach-O Header Summary".green());
     println!("----------------------------------------");
-    println!("  Magic        : 0x{:08x}", magic);
-    println!("  Architecture : {} ({})",
+
+    println!("{} 0x{:08x}", "  Magic        :".yellow(), magic);
+
+    println!(
+        "{} {} ({})",
+        "  Architecture :".yellow(),
         constants::cpu_type_name(cputype),
         constants::cpu_subtype_name(cputype, cpusubtype),
     );
-    println!("  Word size    : {}-bit", bits);
-    println!("  File type    : {}", constants::filetype_name(filetype));
-    println!("  Load cmds    : {}", ncmds);
-    println!("  Cmds size    : {} bytes", sizeofcmds);
-    println!("  Flags        : 0x{:08x}", flags);
+
+    println!("{} {}-bit", "  Word size    :".yellow(), bits);
+    println!("{} {}", "  File type    :".yellow(), constants::filetype_name(filetype));
+    println!("{} {}", "  Load cmds    :".yellow(), ncmds);
+    println!("{} {} bytes", "  Cmds size    :".yellow(), sizeofcmds);
+    println!("{} 0x{:08x}", "  Flags        :".yellow(), flags);
+
     println!("----------------------------------------");
     println!();
 }
@@ -126,8 +140,7 @@ fn print_common_header(
 
 
 
-pub fn read_thin_header(data: &[u8], slice: MachOSlice) -> Result<MachOHeader, Box<dyn Error>> {
-    use std::mem::size_of;
+pub fn read_thin_header(data: &[u8], slice: &MachOSlice) -> Result<ParsedMachOHeader, Box<dyn Error>> {
 
     let base = slice.offset as usize;
 
@@ -175,7 +188,7 @@ pub fn read_thin_header(data: &[u8], slice: MachOSlice) -> Result<MachOHeader, B
         let header = MachOHeader::Header64(header64);
         print_header_summary(&header);
 
-        Ok(header)
+        Ok(ParsedMachOHeader { kind, header })
     }    else {
         let header32 = MachHeader32 {
             magic: utils::bytes_to(kind.is_be(), &data[base + 0..])?,
@@ -189,6 +202,6 @@ pub fn read_thin_header(data: &[u8], slice: MachOSlice) -> Result<MachOHeader, B
 
         let header = MachOHeader::Header32(header32);
         print_header_summary(&header);
-        Ok(header)
+        Ok(ParsedMachOHeader { kind, header })
     }
 }
