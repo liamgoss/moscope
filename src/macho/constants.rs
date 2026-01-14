@@ -11,6 +11,7 @@
 // These are the first 4 bytes as they appear in the file.
 //
 // "$(xcrun --sdk macosx --show-sdk-path)/usr/include/mach-o/fat.h"
+// "$(xcrun --sdk macosx --show-sdk-path)/usr/include/mach-o/loader.h"
 
 /// 32-bit Mach-O, big-endian (MH_MAGIC = 0xfeedface)
 pub const MH_MAGIC: [u8; 4] = [0xFE, 0xED, 0xFA, 0xCE];
@@ -375,5 +376,148 @@ pub fn filetype_name(filetype: u32) -> &'static str {
         MH_KEXT_BUNDLE   => "x86_64 kext (Kernel Extension) [[MH_KEXT_BUNDLE]]",
         MH_FILESET      => "Kernel Cache Fileset [[MH_FILESET]]",
         _ => "Unknown File Type",
+    }
+}
+
+
+
+/*
+============================
+======== UNIT TESTS ========
+============================ 
+*/
+
+
+// NOTE: Some of these tests look basic like "Yep X == Y"
+// But my purpose for them is to lock in rules for how these funcs should perform
+// e.g. ptrauth flag handling, unknown (sub)type handling, <-- general semantic tests
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    // cpu_type_name() tests
+    #[test]
+    fn cpu_type_name_ignores_abi64_flag() {
+        // meaaing CPU_TYPE_X86 BITWISE-OR | CPU_ARCH_ABI64 should still be x86
+        let cputype = CPU_TYPE_X86 | CPU_ARCH_ABI64;
+        assert_eq!(cpu_type_name(cputype), "x86");
+    }
+
+    #[test]
+    fn cpu_type_name_unknown() {
+        assert_eq!(cpu_type_name(0xBEEF), "Unknown");
+    }
+
+    // cpu_subtype_name() tests
+    
+    #[test] 
+    fn cpu_subtype_arm64e_detected_via_ptrauth() {
+        let cputype = CPU_TYPE_ARM64;
+        let cpusubtype = CPU_SUBTYPE_ARM64E | CPU_SUBTYPE_PTRAUTH_ABI;
+
+        assert_eq!(cpu_subtype_name(cputype, cpusubtype), "arm64e");
+    }
+
+    #[test]
+    fn cpu_subtype_name_arm64_v8_detected() {
+        let cputype = CPU_TYPE_ARM64;
+        let cpusubtype = CPU_SUBTYPE_ARM64_V8;
+
+        assert_eq!(cpu_subtype_name(cputype, cpusubtype), "arm64");
+    }
+
+    #[test]
+    fn cpu_subtype_arm_v7_detected() {
+        let cputype = CPU_TYPE_ARM;
+        let cpusubtype = CPU_SUBTYPE_ARM_V7;
+
+        assert_eq!(
+            cpu_subtype_name(cputype, cpusubtype),
+            "ARMv7"
+        );
+    }
+
+    #[test]
+    fn cpu_subtype_arm64_all_detected() {
+        let cputype = CPU_TYPE_ARM64;
+        let cpusubtype = CPU_SUBTYPE_ARM64_ALL;
+
+        assert_eq!(
+            cpu_subtype_name(cputype, cpusubtype),
+            "arm64 (ARM64_ALL)"
+        );
+    }
+
+    #[test]
+    fn cpu_subtype_arm64_unknown_subtype() { // 64 bit unknown
+        let cputype = CPU_TYPE_ARM64;
+        let cpusubtype = 0xBEEF; 
+
+        assert_eq!(
+            cpu_subtype_name(cputype, cpusubtype),
+            "ARM64 (unknown subtype)"
+        );
+    }
+
+    #[test]
+    fn cpu_subtype_arm_unknown() { // non 64 bit bit unknown
+        let cputype = CPU_TYPE_ARM;
+        let cpusubtype = 0xBEEF;
+
+        assert_eq!(
+            cpu_subtype_name(cputype, cpusubtype),
+            "ARM (unknown subtype)"
+        );
+    }
+
+    #[test]
+    fn cpu_subtype_x86_64_simple() {
+        assert_eq!(
+            cpu_subtype_name(CPU_TYPE_X86_64, 0),
+            "x86_64"
+        );
+    }
+
+    #[test]
+    fn cpu_subtype_x86_32_simple() {
+        assert_eq!(
+            cpu_subtype_name(CPU_TYPE_X86, 0),
+            "x86"
+        );
+    }
+
+    #[test]
+    fn cpu_subtype_unknown_cpu() {
+        assert_eq!(
+            cpu_subtype_name(0xBEEF, 0),
+            "Unknown"
+        );
+    }
+
+    // filetype_name() tests
+    #[test]
+    fn filetype_execute() {
+        assert_eq!(
+            filetype_name(MH_EXECUTE),
+            "Demand Paged Executable File [[MH_EXECUTE]]"
+        );
+    }
+
+    #[test]
+    fn filetype_dylib() {
+        assert_eq!(
+            filetype_name(MH_DYLIB),
+            "Dynamically Bound Shared Library [[MH_DYLIB]]"
+        );
+    }
+
+    #[test]
+    fn filetype_unknown() {
+        assert_eq!(
+            filetype_name(0xFFFFFFFF),
+            "Unknown File Type"
+        );
     }
 }

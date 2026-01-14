@@ -1,10 +1,11 @@
+// File Purpose: "what kind of Mach-O file is this?"
 use std::error::Error;
 use super::utils;
 use super::constants;
 use colorize::AnsiColor;
 
 
-// File Purpose: "what kind of Mach-O file is this?"
+
 /*
 Mach-O Header
 +----------------+      +---------------+

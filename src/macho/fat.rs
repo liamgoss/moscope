@@ -1,9 +1,9 @@
+// File Purpose: "Which Mach-O should be parsed?"
 use std::error::Error;
-
 use super::constants;
 use super::utils;
 
-// File Purpose: "Which Mach-O should be parsed?"
+
 
 /*
 +-------------------+
@@ -187,4 +187,111 @@ pub fn read_fat_header(data: &[u8]) -> Result<FatHeader, Box<dyn Error>> {
         kind,
         nfat_arch,
     })
+}
+
+
+/*
+============================
+======== UNIT TESTS ========
+============================ 
+*/
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::macho::constants::*;
+
+    #[test]
+    fn read_fat_header_32_be() {
+        let data = [
+            // FAT_MAGIC
+            0xCA, 0xFE, 0xBA, 0xBE,
+            // nfat_arch = 2 (to be read as BE)
+            0x00, 0x00, 0x00, 0x02,
+        ];
+
+        let header = read_fat_header(&data).unwrap();
+
+        assert_eq!(header.kind, FatKind::Fat32BE);
+        assert_eq!(header.nfat_arch, 2);
+    }
+
+    #[test]
+    fn read_fat_header_64_be() {
+        let data = [
+            // FAT_MAGIC_64
+            0xCA, 0xFE, 0xBA, 0xBF,
+            // nfat_arch = 2 (to be read as BE)
+            0x00, 0x00, 0x00, 0x02,
+        ];
+
+        let header = read_fat_header(&data).unwrap();
+
+        assert_eq!(header.kind, FatKind::Fat64BE);
+        assert_eq!(header.nfat_arch, 2);
+    }
+
+    #[test]
+    fn read_fat_header_rejects_invalid_magic() {
+        let data = [
+            0xDE, 0xAD, 0xBE, 0xEF,
+            0x00, 0x00, 0x00, 0x01,
+        ];
+
+        assert!(read_fat_header(&data).is_err());
+    }
+
+    #[test]
+    fn read_single_fat_arch_32_be() {
+
+        // DIY Fat header to be a FatArch32 with 1 nfat_arch and it's an x86
+
+        let mut data = Vec::new();
+
+        // FAT Header
+        data.extend_from_slice(&FAT_MAGIC); // 0xCAFEBABE
+        data.extend_from_slice(&1u32.to_be_bytes()); // nfat_arch = 1
+
+        // fat_arch_32 as if it's an x86 binary
+        data.extend_from_slice(&constants::CPU_TYPE_X86.to_be_bytes());
+        data.extend_from_slice(&0u32.to_be_bytes()); // cpusubtype
+        data.extend_from_slice(&0x1000u32.to_be_bytes()); // offset to binary
+        data.extend_from_slice(&0x2000u32.to_be_bytes()); // size of binary
+        data.extend_from_slice(&0x4u32.to_be_bytes());    // align
+
+        let header = read_fat_header(&data).unwrap();
+        let archs = read_fat_archs(&data, &header).unwrap();
+
+        assert_eq!(archs.len(), 1);
+
+        match &archs[0] {
+            FatArch::Arch32(arch) => {
+                assert_eq!(arch.cputype, CPU_TYPE_X86);
+                assert_eq!(arch.offset, 0x1000); // 4096
+                assert_eq!(arch.size, 0x2000); // 8192
+                assert_eq!(arch.align, 4); // alignment
+            }
+
+            _ => panic!("Expected Arch32"),
+        }
+    }
+
+
+    // bounds checking verification
+    #[test]
+    fn read_fat_arch_truncated_fails() {
+        let mut data = Vec::new();
+
+        data.extend_from_slice(&constants::FAT_MAGIC);
+        data.extend_from_slice(&1u32.to_be_bytes());
+
+        // Only part of fat_arch_32 (too short)
+        data.extend_from_slice(&[0x00; 8]);
+
+        let header = read_fat_header(&data).unwrap();
+        let archs = read_fat_archs(&data, &header);
+
+        assert!(archs.is_err());
+    }
+
 }

@@ -1,9 +1,9 @@
+// File Purpose: "What load commands are present in a given binary?"
 use super::constants::*;
 use super::utils;
-use core::num;
 use std::error::Error;
 use colorize::AnsiColor;
-// File Purpose: "What load commands are present in a given binary?"
+
 
 
 
@@ -27,11 +27,12 @@ pub fn load_comand_name(cmd: u32) -> &'static str {
         cmd & !LC_REQ_DYLD // base command
      */ 
 
-    let requires_dyld = (cmd & LC_REQ_DYLD) != 0;
+    let _requires_dyld = (cmd & LC_REQ_DYLD) != 0; // Not using at the moment, prefixing w/ underscore
     let base_cmd = cmd & !LC_REQ_DYLD;
 
     match base_cmd { // Is there any better way to do this? This feels wrong, is there a way to like reflect the variable names back based on their value?
         // This should be O(1) so I guess it's not inefficient it's just a hassle to type which is fine.
+        // According to the interwebs, it may go up to linear time depending on number of elements and compiler optimizations...
 
         // NOTE: I had ChatGPT 5.2 take my constants.rs snippet and spit this out so I didn't have to type it.
         // I made sure everything is present except LC_REQ_DYLD which was masked off

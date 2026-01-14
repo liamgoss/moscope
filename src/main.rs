@@ -1,17 +1,15 @@
 #![allow(warnings)]
-mod macho;
-
 use std::error::Error;
 use std::path::PathBuf;
 
-use macho::fat;
-use macho::header;
-use macho::constants;
+use moscope::macho::fat;
+use moscope::macho::header;
+use moscope::macho::constants;
 
 use colorize::AnsiColor;
 use clap::Parser;
 
-use crate::macho::load_commands;
+use moscope::macho::load_commands;
 
 
 
