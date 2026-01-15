@@ -79,8 +79,13 @@ Load Commands Found:  20
 ## Requirements
 
 - Rust (stable)
-- macOS
 
+### Platform notes
+
+`moscope` is a pure Rust Mach-O parsing tool and can be built and used on any platform
+(Linux, macOS, or Windows). 
+
+`moscope` does not currently execute the target binary.
 
 ## Future Work
 
