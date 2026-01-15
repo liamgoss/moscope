@@ -163,6 +163,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     let load_commands = load_commands::read_load_commands(&data, load_command_offset as u32, ncmds, word_size, is_be)?;
     load_commands::print_load_commands(&load_commands);
 
-    println!("Done!");
     Ok(())
 }

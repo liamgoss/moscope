@@ -18,6 +18,10 @@
 moscope /path/to/target_binary
 ```
 
+> This project comes with 3 sample binaries (x86_64, ARM64, FAT) to test with.  
+
+> The sample binaries can be found in `tests/samples/` or can be compiled yourself using `/tests/samples/src/hello.cpp`
+
 ### Example Output
 ```
 Checking for universal binary...
@@ -63,7 +67,6 @@ Load Commands Found:  20
  - LC_CODE_SIGNATURE              cmd=0x0000001d size=16
 ----------------------------------------
 
-Done!
 ```
 
 ---
