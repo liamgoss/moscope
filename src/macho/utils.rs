@@ -69,6 +69,23 @@ pub fn bytes_to<T: FromEndianBytes>(is_be: bool, data: &[u8]) -> Result<T, Box<d
 }
 
 
+pub fn byte_array_to_string(bytes: &[u8; 16]) -> String {
+    // Intended use of this function at the time of creation is for segment and section names
+    // Which I had defined in constants.rs as byte arrays in lieu of strings
+
+    let end = bytes.iter().position(|&b| b == 0).unwrap_or(16); // scan array until first null byte, otherwise all 16 bytes are used for the name
+    String::from_utf8_lossy(&bytes[..end]).into_owned()
+    // from_utf8_lossy should convert any invalid UTF-8 sequences w/ the Unicode replacement char U+FFFD
+    // the Mach-O spec (well, loader.h) does not appear to specify or guarantee anywhere that the segment/section names have to be UTF8
+    // But according to my highly in-depth research (the first result I clicked on the internet) this func should accept any byte sequence and only return UTF8
+    // so even if it's NOT UTF8 inside, it won't panic or give a result, it just swaps that with U+FFFD (the question mark in the diamond)
+
+    // But from_utf8_lossy returns....a cow (moo?) which is a clone on write smart pointer 
+    // https://doc.rust-lang.org/std/borrow/enum.Cow.html
+
+    // tl;dr take byte array --> replace invalid utf --> clone the cow
+}
+
 /*
 ============================
 ======== UNIT TESTS ========

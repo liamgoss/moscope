@@ -1,7 +1,7 @@
 // File Purpose: "Which Mach-O should be parsed?"
 use std::error::Error;
-use super::constants;
-use super::utils;
+use crate::macho::constants;
+use crate::macho::utils;
 
 
 

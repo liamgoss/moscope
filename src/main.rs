@@ -2,14 +2,17 @@
 use std::error::Error;
 use std::path::PathBuf;
 
+use moscope::macho::constants::{LC_SEGMENT, LC_SEGMENT_64};
 use moscope::macho::fat;
 use moscope::macho::header;
 use moscope::macho::constants;
+use moscope::macho::load_commands;
+use moscope::macho::segments;
+
 
 use colorize::AnsiColor;
 use clap::Parser;
 
-use moscope::macho::load_commands;
 
 
 
@@ -162,6 +165,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     let load_command_offset = macho_slice.offset as usize + header_size;
     let load_commands = load_commands::read_load_commands(&data, load_command_offset as u32, ncmds, word_size, is_be)?;
     load_commands::print_load_commands(&load_commands);
+
+    // Now check load_commands for LOAD_SEGMENT and LOAD_SEGMENT_64
+    let mut parsed_segments = Vec::new();
+    for lc in load_commands {
+        match lc.cmd {
+            LC_SEGMENT_64 => {
+                let seg = segments::parse_segment_64(&data, lc.offset as usize, is_be)?;
+                parsed_segments.push(seg);
+            }
+
+            LC_SEGMENT => {
+                let seg = segments::parse_segment_32(&data, lc.offset as usize, is_be)?;
+                parsed_segments.push(seg);
+            }
+
+            _ => {
+                () // ignore non LC_SEGMENT* LC's
+            }
+        }
+    }
+
+    segments::print_segments_summary(&parsed_segments);
 
     Ok(())
 }

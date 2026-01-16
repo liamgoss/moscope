@@ -1,6 +1,6 @@
 // File Purpose: "What load commands are present in a given binary?"
-use super::constants::*;
-use super::utils;
+use crate::macho::constants::*;
+use crate::macho::utils;
 use std::error::Error;
 use colorize::AnsiColor;
 

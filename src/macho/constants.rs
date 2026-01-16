@@ -211,6 +211,184 @@ pub const MH_SIM_SUPPORT: u32                   = 1 << 27;    // Allow LC_MIN_VE
 pub const MH_IMPLICIT_PAGEZERO: u32             = 1 << 28;    // main executable has no __PAGEZERO segment. Instead, loader (xnu) will load program high and block out all memory below it.
 pub const MH_DYLIB_IN_CACHE: u32                = 1 << 31;    // Only for use on dylibs. When this bit is set, the dylib is part of the dyld shared cache, rather than loose in the filesystem.
 
+
+//
+// ------------------------------------------------------------
+// Section Flags
+// ------------------------------------------------------------
+/* From loader.h:
+ * The flags field of a section structure is separated into two parts a section
+ * type and section attributes.  The section types are mutually exclusive (it
+ * can only have one type) but the section attributes are not (it may have more
+ * than one attribute).
+ */
+pub const SECTION_TYPE: u32 = 0x000000FF; // 256 section types
+pub const SECTION_ATTRIBUTES: u32 = 0xFFFFFF00; // 24 section attributes
+
+// constants for the type of a section
+pub const S_REGULAR: u32                    = 0x00; // regular section
+pub const S_ZEROFILL: u32                   = 0x01; // zero fill on demand section
+pub const S_CSTRING_LITERALS: u32           = 0x02; // section with only literal C strings
+pub const S_4BYTE_LITERALS: u32             = 0x03; // section with only 4 byte literals
+pub const S_8BYTE_LITERALS: u32             = 0x04; // section with only 8 byte literals
+pub const S_LITERAL_POINTERS: u32           = 0x05; // section with only pointers to literals
+pub const S_NON_LAZY_SYMBOL_POINTERS: u32   = 0x06; // section with only non lazy symbol pointers
+pub const S_LAZY_SYMBOL_POINTERS: u32       = 0x07; // section with only lazy symbol
+pub const S_SYMBOL_STUBS: u32               = 0x08; // section with only symbol stubs, byte size of stub in the reserved2 field
+pub const S_MOD_INIT_FUNC_POINTERS: u32     = 0x09; // section with only function pointers for initialization
+pub const S_MOD_TERM_FUNC_POINTERS: u32     = 0x0A; // section with only function pointers for termination
+pub const S_COALESCED: u32                  = 0x0B; // section contains symbols that are to be coalesced
+pub const S_GB_ZEROFILL: u32                = 0x0C; // zero fill on demand section (that can be larger than 4 gigabytes)
+pub const S_INTERPOSING: u32                = 0x0D; // section with only pars of function pointers for interposing
+pub const S_16BYTE_LITERALS: u32            = 0x0E; // section with only 16 byte literals
+pub const S_DTRACE_DOF: u32                 = 0x0F; // section contains DTrace Object Format
+pub const S_LAZY_DYLUB_SYMBOL_POINTERS: u32 = 0x10; // section with only lazy symbol pointers to lazy loaded dylibs
+
+// section types to support thread local variables
+pub const SECTION_ATTRIBUTES_USR: u32       = 0xFF000000; // User setable attributes
+pub const S_ATTR_PURE_INSTRUCTIONS: u32     = 0x80000000; // section contains only true machine instructions
+pub const S_ATTR_NO_TOC: u32                = 0x40000000; // section contains coalesced symbols that are not to be in a ranlib table of contents
+pub const S_ATTR_STRIP_STATIC_SYMS: u32     = 0x20000000; // ok to strip static symbols in this section in files with the MH_DYLDLINK flag
+pub const S_ATTR_NO_DEAD_STRIP: u32         = 0x10000000; // no dead stripping
+pub const S_ATTR_LIVE_SUPPORT: u32          = 0x08000000; // blocks are live if they reference live blocks
+pub const S_ATTR_SELF_MODIFYING_CODE: u32   = 0x04000000; // Used with i386 code stubs written on by dyld
+
+pub const S_ATTR_DEBUG: u32                 = 0x02000000; // a debug section (NOTE: if a segment contains any sections marked with this, then all sections in that segment but have this attribute)
+pub const SECTION_ATTRIBUTES_SYS: u32       = 0x00ffff00; // system setable attributes
+pub const S_ATTR_SOME_INSTRUCTIONS: u32     = 0x00000400; // section contains some machine instructions
+pub const S_ATTR_EXT_RELOC: u32             = 0x00000200; // section has external relocation entries
+pub const S_ATTR_LOC_RELOC: u32             = 0x00000100; // section has local relocation entries
+
+
+
+/* From loader.h:
+ * The names of segments and sections in them are mostly meaningless to the
+ * link-editor.  But there are few things to support traditional UNIX
+ * executables that require the link-editor and assembler to use some names
+ * agreed upon by convention.
+ *
+ * The initial protection of the "__TEXT" segment has write protection turned
+ * off (not writeable).
+ *
+ * The link-editor will allocate common symbols at the end of the "__common"
+ * section in the "__DATA" segment.  It will create the section and segment
+ * if needed.
+ */
+
+/* The currently known segment names and the section names in those segments */
+
+// I originally wrote these out by hand as string slices, however it seems 
+//      that it would be more beneficial to actually define these as byte arrays.
+// As such, disclaimer, I had ChatGPT 5.2 take:
+//      pub const SEG_PAGEZERO: &str            = "__PAGEZERO"; // the pagezero segment which has no protections and catches NULL references for MH_EXECUTE files
+// and turn it into
+// pub const SEG_PAGEZERO: [u8; 16] = [b'_', b'_', b'P', b'A', b'G', b'E', b'Z', b'E', b'R', b'O', 0, 0, 0, 0, 0, 0];  
+// for all of them 
+
+pub const SEG_PAGEZERO: [u8; 16] = [
+    b'_', b'_', b'P', b'A', b'G', b'E', b'Z', b'E', b'R', b'O',
+    0, 0, 0, 0, 0, 0
+]; // the pagezero segment which has no protections and catches NULL references for MH_EXECUTE files
+
+pub const SEG_TEXT: [u8; 16] = [
+    b'_', b'_', b'T', b'E', b'X', b'T',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // the tradition UNIX text segment 
+
+pub const SECT_TEXT: [u8; 16] = [
+    b'_', b'_', b't', b'e', b'x', b't',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // the real text part of the text section, no headers and no padding
+
+pub const SECT_FVMLIB_INIT0: [u8; 16] = [
+    b'_', b'_', b'f', b'v', b'm', b'l', b'i', b'b', b'_', b'i', b'n', b'i', b't', b'0',
+    0, 0
+]; // the fvmlib initialization section
+
+pub const SECT_FVMLIB_INIT1: [u8; 16] = [
+    b'_', b'_', b'f', b'v', b'm', b'l', b'i', b'b', b'_', b'i', b'n', b'i', b't', b'1',
+    0, 0
+]; // the section following the fvmlib initialization section
+
+pub const SEG_DATA: [u8; 16] = [
+    b'_', b'_', b'D', b'A', b'T', b'A',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // the tradition UNIX data segment
+
+pub const SECT_DATA: [u8; 16] = [
+    b'_', b'_', b'd', b'a', b't', b'a',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // the real initialized data section, no padding, no bss overlap
+
+pub const SECT_BSS: [u8; 16] = [
+    b'_', b'_', b'b', b's', b's',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // the real uninitialized data section, no padding
+
+pub const SECT_COMMON: [u8; 16] = [
+    b'_', b'_', b'c', b'o', b'm', b'm', b'o', b'n',
+    0, 0, 0, 0, 0, 0, 0, 0
+]; // the section common symbols are allocate din by the link editor
+
+pub const SEG_OBJC: [u8; 16] = [
+    b'_', b'_', b'O', b'B', b'J',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // objective-C runtime segment
+
+pub const SECT_OBJC_SYMBOLS: [u8; 16] = [
+    b'_', b'_', b's', b'y', b'm', b'b', b'o', b'l', b'_', b't', b'a', b'b', b'l', b'e',
+    0, 0
+]; // symbol table
+
+pub const SECT_OBJC_MODULES: [u8; 16] = [
+    b'_', b'_', b'm', b'o', b'd', b'u', b'l', b'e', b'_', b'i', b'n', b'f', b'o',
+    0, 0, 0
+]; // module information
+
+pub const SECT_OBJC_STRINGS: [u8; 16] = [
+    b'_', b'_', b's', b'e', b'l', b'e', b'c', b't', b'o', b'r', b'_', b's', b't', b'r', b's',
+    0
+]; // string table
+
+pub const SECT_OBJC_REFS: [u8; 16] = [
+    b'_', b'_', b's', b'e', b'l', b'e', b'c', b't', b'o', b'r', b'_', b'r', b'e', b'f', b's',
+    0
+]; // string table
+
+pub const SEG_ICON: [u8; 16] = [
+    b'_', b'_', b'I', b'C', b'O', b'N',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // the icon segment
+
+pub const SECT_ICON_HEADER: [u8; 16] = [
+    b'_', b'_', b'h', b'e', b'a', b'd', b'e', b'r',
+    0, 0, 0, 0, 0, 0, 0, 0
+]; // the icon headers
+
+pub const SECT_ICON_TIFF: [u8; 16] = [
+    b'_', b'_', b't', b'i', b'f', b'f',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]; // the icons in tiff format
+
+// the segment containing all structs created and maintained by the link editor.
+// Created with -seglinkedit option to ld(1) for MH_EXECUTE and FVMLIB file types only
+pub const SEG_LINKEDIT: [u8; 16] = [
+    b'_', b'_', b'L', b'I', b'N', b'K', b'E', b'D', b'I', b'T',
+    0, 0, 0, 0, 0, 0
+];
+
+pub const SEG_UNIXSTACK: [u8; 16] = [
+    b'_', b'_', b'U', b'N', b'I', b'X', b'S', b'T', b'A', b'C', b'K',
+    0, 0, 0, 0, 0
+]; // the unix stack segment
+
+pub const SEG_IMPORT: [u8; 16] = [
+    b'_', b'_', b'I', b'M', b'P', b'O', b'R', b'T',
+    0, 0, 0, 0, 0, 0, 0, 0
+]; // the segment for the self (dyld) modifying code stubs that has read, write, and execute permissions
+
+
+
 //
 // ------------------------------------------------------------
 // Load Commands
@@ -274,6 +452,8 @@ pub const LC_ATOM_INFO: u32                 = 0x36; // used with linkedit_data_c
 pub const LC_FUNCTION_VARIANTS: u32         = 0x37; // used with linkedit_data_command
 pub const LC_FUNCTION_VARIANT_FIXED: u32    = 0x38; // used with linkedit_data_command
 pub const LC_TARGET_TRIPLE: u32             = 0x39; // target triple used to compile
+
+
 
 
 

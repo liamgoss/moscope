@@ -1,9 +1,8 @@
 // File Purpose: "what kind of Mach-O file is this?"
 use std::error::Error;
-use super::constants::*;
-
-use super::utils;
-use super::constants;
+use crate::macho::constants::*;
+use crate::macho::utils;
+use crate::macho::constants;
 use colorize::AnsiColor;
 
 
