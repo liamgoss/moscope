@@ -285,93 +285,42 @@ pub const S_ATTR_LOC_RELOC: u32             = 0x00000100; // section has local r
 // pub const SEG_PAGEZERO: [u8; 16] = [b'_', b'_', b'P', b'A', b'G', b'E', b'Z', b'E', b'R', b'O', 0, 0, 0, 0, 0, 0];  
 // for all of them 
 
+// After having tested on real binaries, there was a significant amount of "Unknown" section types showing up. Adding one's I've frequently come across as well
+
+// ------------------------------------------------------------
+// Segment names
+// ------------------------------------------------------------
+
 pub const SEG_PAGEZERO: [u8; 16] = [
     b'_', b'_', b'P', b'A', b'G', b'E', b'Z', b'E', b'R', b'O',
     0, 0, 0, 0, 0, 0
-]; // the pagezero segment which has no protections and catches NULL references for MH_EXECUTE files
+];
 
 pub const SEG_TEXT: [u8; 16] = [
     b'_', b'_', b'T', b'E', b'X', b'T',
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // the tradition UNIX text segment 
-
-pub const SECT_TEXT: [u8; 16] = [
-    b'_', b'_', b't', b'e', b'x', b't',
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // the real text part of the text section, no headers and no padding
-
-pub const SECT_FVMLIB_INIT0: [u8; 16] = [
-    b'_', b'_', b'f', b'v', b'm', b'l', b'i', b'b', b'_', b'i', b'n', b'i', b't', b'0',
-    0, 0
-]; // the fvmlib initialization section
-
-pub const SECT_FVMLIB_INIT1: [u8; 16] = [
-    b'_', b'_', b'f', b'v', b'm', b'l', b'i', b'b', b'_', b'i', b'n', b'i', b't', b'1',
-    0, 0
-]; // the section following the fvmlib initialization section
+];
 
 pub const SEG_DATA: [u8; 16] = [
     b'_', b'_', b'D', b'A', b'T', b'A',
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // the tradition UNIX data segment
+];
 
-pub const SECT_DATA: [u8; 16] = [
-    b'_', b'_', b'd', b'a', b't', b'a',
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // the real initialized data section, no padding, no bss overlap
-
-pub const SECT_BSS: [u8; 16] = [
-    b'_', b'_', b'b', b's', b's',
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // the real uninitialized data section, no padding
-
-pub const SECT_COMMON: [u8; 16] = [
-    b'_', b'_', b'c', b'o', b'm', b'm', b'o', b'n',
-    0, 0, 0, 0, 0, 0, 0, 0
-]; // the section common symbols are allocate din by the link editor
+pub const SEG_DATA_CONST: [u8; 16] = [
+    b'_', b'_', b'D', b'A', b'T', b'A', b'_', b'C', b'O', b'N', b'S', b'T',
+    0, 0, 0, 0
+];
 
 pub const SEG_OBJC: [u8; 16] = [
     b'_', b'_', b'O', b'B', b'J',
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // objective-C runtime segment
-
-pub const SECT_OBJC_SYMBOLS: [u8; 16] = [
-    b'_', b'_', b's', b'y', b'm', b'b', b'o', b'l', b'_', b't', b'a', b'b', b'l', b'e',
-    0, 0
-]; // symbol table
-
-pub const SECT_OBJC_MODULES: [u8; 16] = [
-    b'_', b'_', b'm', b'o', b'd', b'u', b'l', b'e', b'_', b'i', b'n', b'f', b'o',
-    0, 0, 0
-]; // module information
-
-pub const SECT_OBJC_STRINGS: [u8; 16] = [
-    b'_', b'_', b's', b'e', b'l', b'e', b'c', b't', b'o', b'r', b'_', b's', b't', b'r', b's',
-    0
-]; // string table
-
-pub const SECT_OBJC_REFS: [u8; 16] = [
-    b'_', b'_', b's', b'e', b'l', b'e', b'c', b't', b'o', b'r', b'_', b'r', b'e', b'f', b's',
-    0
-]; // string table
+];
 
 pub const SEG_ICON: [u8; 16] = [
     b'_', b'_', b'I', b'C', b'O', b'N',
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // the icon segment
+];
 
-pub const SECT_ICON_HEADER: [u8; 16] = [
-    b'_', b'_', b'h', b'e', b'a', b'd', b'e', b'r',
-    0, 0, 0, 0, 0, 0, 0, 0
-]; // the icon headers
-
-pub const SECT_ICON_TIFF: [u8; 16] = [
-    b'_', b'_', b't', b'i', b'f', b'f',
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]; // the icons in tiff format
-
-// the segment containing all structs created and maintained by the link editor.
-// Created with -seglinkedit option to ld(1) for MH_EXECUTE and FVMLIB file types only
 pub const SEG_LINKEDIT: [u8; 16] = [
     b'_', b'_', b'L', b'I', b'N', b'K', b'E', b'D', b'I', b'T',
     0, 0, 0, 0, 0, 0
@@ -380,12 +329,139 @@ pub const SEG_LINKEDIT: [u8; 16] = [
 pub const SEG_UNIXSTACK: [u8; 16] = [
     b'_', b'_', b'U', b'N', b'I', b'X', b'S', b'T', b'A', b'C', b'K',
     0, 0, 0, 0, 0
-]; // the unix stack segment
+];
 
 pub const SEG_IMPORT: [u8; 16] = [
     b'_', b'_', b'I', b'M', b'P', b'O', b'R', b'T',
     0, 0, 0, 0, 0, 0, 0, 0
-]; // the segment for the self (dyld) modifying code stubs that has read, write, and execute permissions
+];
+
+// ------------------------------------------------------------
+// Section names
+// ------------------------------------------------------------
+
+pub const SECT_TEXT: [u8; 16] = [
+    b'_', b'_', b't', b'e', b'x', b't',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_STUBS: [u8; 16] = [
+    b'_', b'_', b's', b't', b'u', b'b', b's',
+    0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_OBJC_STUBS: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b's', b't', b'u', b'b', b's',
+    0, 0, 0, 0
+];
+
+pub const SECT_INIT_OFFSETS: [u8; 16] = [
+    b'_', b'_', b'i', b'n', b'i', b't', b'_', b'o', b'f', b'f', b's', b'e', b't', b's',
+    0, 0
+];
+
+pub const SECT_GCC_EXCEPT_TAB: [u8; 16] = [
+    b'_', b'_', b'g', b'c', b'c', b'_', b'e', b'x', b'c', b'e', b'p', b't', b'_', b't', b'a', b'b'
+];
+
+pub const SECT_CONST: [u8; 16] = [
+    b'_', b'_', b'c', b'o', b'n', b's', b't',
+    0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_CSTRING: [u8; 16] = [
+    b'_', b'_', b'c', b's', b't', b'r', b'i', b'n', b'g',
+    0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_OBJC_METHNAME: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'm', b'e', b't', b'h', b'n', b'a', b'm', b'e',
+    0
+];
+
+pub const SECT_INFO_PLIST: [u8; 16] = [
+    b'_', b'_', b'i', b'n', b'f', b'o', b'_', b'p', b'l', b'i', b's', b't',
+    0, 0, 0, 0
+];
+
+pub const SECT_UNWIND_INFO: [u8; 16] = [
+    b'_', b'_', b'u', b'n', b'w', b'i', b'n', b'd', b'_', b'i', b'n', b'f', b'o',
+    0, 0, 0
+];
+
+pub const SECT_EH_FRAME: [u8; 16] = [
+    b'_', b'_', b'e', b'h', b'_', b'f', b'r', b'a', b'm', b'e',
+    0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_DATA: [u8; 16] = [
+    b'_', b'_', b'd', b'a', b't', b'a',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_BSS: [u8; 16] = [
+    b'_', b'_', b'b', b's', b's',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_COMMON: [u8; 16] = [
+    b'_', b'_', b'c', b'o', b'm', b'm', b'o', b'n',
+    0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_GOT: [u8; 16] = [
+    b'_', b'_', b'g', b'o', b't',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_CFSTRING: [u8; 16] = [
+    b'_', b'_', b'c', b'f', b's', b't', b'r', b'i', b'n', b'g',
+    0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_OBJC_IMAGEINFO: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'i', b'm', b'a', b'g', b'e', b'i', b'n', b'f', b'o'
+];
+
+pub const SECT_OBJC_SELREFS: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b's', b'e', b'l', b'r', b'e', b'f', b's',
+    0, 0
+];
+
+pub const SECT_OBJC_CLASSREFS: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'c', b'l', b'a', b's', b's', b'r', b'e', b'f', b's'
+];
+
+pub const SECT_OBJC_SYMBOLS: [u8; 16] = [
+    b'_', b'_', b's', b'y', b'm', b'b', b'o', b'l', b'_', b't', b'a', b'b', b'l', b'e',
+    0, 0
+];
+
+pub const SECT_OBJC_MODULES: [u8; 16] = [
+    b'_', b'_', b'm', b'o', b'd', b'u', b'l', b'e', b'_', b'i', b'n', b'f', b'o',
+    0, 0, 0
+];
+
+pub const SECT_OBJC_STRINGS: [u8; 16] = [
+    b'_', b'_', b's', b'e', b'l', b'e', b'c', b't', b'o', b'r', b'_', b's', b't', b'r', b's',
+    0
+];
+
+pub const SECT_OBJC_REFS: [u8; 16] = [
+    b'_', b'_', b's', b'e', b'l', b'e', b'c', b't', b'o', b'r', b'_', b'r', b'e', b'f', b's',
+    0
+];
+
+pub const SECT_ICON_HEADER: [u8; 16] = [
+    b'_', b'_', b'h', b'e', b'a', b'd', b'e', b'r',
+    0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_ICON_TIFF: [u8; 16] = [
+    b'_', b'_', b't', b'i', b'f', b'f',
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
 
 
 

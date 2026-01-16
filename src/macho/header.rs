@@ -3,7 +3,7 @@ use std::error::Error;
 use crate::macho::constants::*;
 use crate::macho::utils;
 use crate::macho::constants;
-use colorize::AnsiColor;
+use colored::Colorize;
 
 
 
@@ -173,23 +173,23 @@ fn print_common_header(
 ) {
     let named_flags = parse_flags(flags);
     println!();
-    println!("{}", "Mach-O Header Summary".b_green());
+    println!("{}", "Mach-O Header Summary".green().bold());
     println!("----------------------------------------");
 
-    println!("{} 0x{:08x}", "  Magic        :".b_yellow(), magic);
+    println!("{} 0x{:08x}", "  Magic        :".yellow().bold(), magic);
 
     println!(
         "{} {} ({})",
-        "  Architecture :".b_yellow(),
+        "  Architecture :".yellow().bold(),
         constants::cpu_type_name(cputype),
         constants::cpu_subtype_name(cputype, cpusubtype),
     );
 
-    println!("{} {}-bit", "  Word size    :".b_yellow(), bits);
-    println!("{} {}", "  File type    :".b_yellow(), constants::filetype_name(filetype));
-    println!("{} {}", "  Load cmds    :".b_yellow(), ncmds);
-    println!("{} {} bytes", "  Cmds size    :".b_yellow(), sizeofcmds);
-    println!("{} {}", "  Flags        :".b_yellow(), named_flags.join(", "));
+    println!("{} {}-bit", "  Word size    :".yellow().bold(), bits);
+    println!("{} {}", "  File type    :".yellow().bold(), constants::filetype_name(filetype));
+    println!("{} {}", "  Load cmds    :".yellow().bold(), ncmds);
+    println!("{} {} bytes", "  Cmds size    :".yellow().bold(), sizeofcmds);
+    println!("{} {}", "  Flags        :".yellow().bold(), named_flags.join(", "));
     println!("----------------------------------------");
     println!();
 }

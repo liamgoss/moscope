@@ -9,8 +9,10 @@ use moscope::macho::constants;
 use moscope::macho::load_commands;
 use moscope::macho::segments;
 
+use colored::control;
+use colored::Colorize;
+use std::io::IsTerminal;
 
-use colorize::AnsiColor;
 use clap::Parser;
 
 
@@ -26,6 +28,10 @@ struct Cli {
     /// Path to the Mach-O binary to inspect
     #[arg(value_name = "BINARY")]
     binary: PathBuf,
+
+    // Disable color output
+    #[arg(long)]
+    pub no_color: bool,
 }
 
 
@@ -58,7 +64,7 @@ fn display_arch(cputype: i32, cpusubtype: i32) -> (&'static str, &'static str) {
 
 fn fat_binary_user_decision<'a>(archs: &'a [fat::FatArch]) -> Result<&'a fat::FatArch, Box<dyn Error>> {
     // Prompt user if they want to analyze the Intel or Apple Silicon binary (or whichever of the `n`` binaries present)
-    println!("{}", "Available architectures:".b_green());
+    println!("{}", "Available architectures:".green().bold());
     for (i, arch) in archs.iter().enumerate() {
         match arch {
             fat::FatArch::Arch32(a) => {
@@ -88,6 +94,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Parse CLI arguments
     let cli = Cli::parse();
 
+    // Disable coloring if desired or if terminal isn't a TTY
+    if cli.no_color || !std::io::stdout().is_terminal() {
+        control::set_override(false);
+    }
+
+
+
     println!("Checking for universal binary...");
 
     // Read the entire file into memory
@@ -104,7 +117,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let macho_slice = match fat::read_fat_header(&data) {
         Ok(fat_header) => {
-            println!("{}", "Fat binary detected:".b_green());
+            println!("{}", "Fat binary detected:".green().bold());
             //println!("{:?}", fat_header);
 
             // Parse all architecture entries described by the fat header
@@ -134,7 +147,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         }
         Err(_) => {
-            println!("{}", "No universal binary detected!".b_yellow());
+            println!("{}", "No universal binary detected!".yellow().bold());
             header::MachOSlice {
                 offset: 0, // Thin binary -> no offset, start right away
                 size: None, // Irrelevant

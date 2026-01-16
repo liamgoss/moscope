@@ -3,8 +3,7 @@
 use std::error::Error;
 use crate::macho::sections::*;
 use crate::macho::utils;
-use crate::macho::constants::*;
-use colorize::AnsiColor;
+use colored::Colorize;
 
 // https://web.archive.org/web/20260107202245/https://developer.apple.com/library/archive/documentation/Performance/Conceptual/CodeFootprint/Articles/MachOOverview.html
 // https://web.archive.org/web/20250912084041/https://medium.com/@travmath/understanding-the-mach-o-file-format-66cf0354e3f4
@@ -203,7 +202,7 @@ pub fn parse_segment_64(data: &[u8], offset: usize, is_be: bool) -> Result<Parse
 
 pub fn print_segments_summary(segments: &Vec<ParsedSegment>) {
     println!();
-    println!("{}", "Segments Summary".b_green());
+    println!("{}", "Segments Summary".green().bold());
     println!("----------------------------------------");
 
     for seg in segments {
@@ -214,38 +213,59 @@ pub fn print_segments_summary(segments: &Vec<ParsedSegment>) {
 
         let file_start = seg.fileoff;
         let file_end   = seg.fileoff + seg.filesize;
-        // rwx is just binary, mask it out below so we can apply coloring to them
+        // rwx is just binary, mask it out below and we can apply coloring to them later if desired (I tried, it's hard to read at the moment)
         // 001 is r -> 1
         // 010 is w -> 2
         // 100 is x -> 4
-        // Experimenting with coloring each letter, but it's honestly hard to read. Sticking w/ default() in case I decide to go back and color these later
-        let prot_r = if seg.initprot & 0x1 != 0 { "R".default() } else { "-".into() }; 
-        let prot_w = if seg.initprot & 0x2 != 0 { "W".default() } else { "-".into() };
-        let prot_x = if seg.initprot & 0x4 != 0 { "X".default() } else { "-".into() };
+        
+        let prot_r = if seg.initprot & 0x1 != 0 { "R" } else { "-".into() }; 
+        let prot_w = if seg.initprot & 0x2 != 0 { "W" } else { "-".into() };
+        let prot_x = if seg.initprot & 0x4 != 0 { "X" } else { "-".into() };
 
         println!();
-        println!("{} {}", "Segment".b_yellow(), seg_name.b_green());
+        println!("{} {}", "Segment".yellow().bold(), seg_name.green().bold());
 
-        println!("{} 0x{:016x} - 0x{:016x} ({:#x} bytes)", "  VM range   :".b_yellow(), vm_start, vm_end, seg.vmsize);
+        println!("{} 0x{:016x} - 0x{:016x} ({:#x} bytes)", "  VM range   :".yellow().bold(), vm_start, vm_end, seg.vmsize);
 
-        println!("{} 0x{:08x} - 0x{:08x} ({:#x} bytes)", "  File range :".b_yellow(), file_start, file_end, seg.filesize);
+        println!("{} 0x{:08x} - 0x{:08x} ({:#x} bytes)", "  File range :".yellow().bold(), file_start, file_end, seg.filesize);
 
-        println!("{} {}{}{}", "  Protections:".b_yellow(), prot_r, prot_w, prot_x);
+        println!("{} {}{}{}", "  Protections:".yellow().bold(), prot_r, prot_w, prot_x);
 
-        println!("{} {}", "  Sections   :".b_yellow(), seg.sections.len());
+        println!("{} {}", "  Sections   :".yellow().bold(), seg.sections.len());
 
         for sect in &seg.sections {
             let sect_name = utils::byte_array_to_string(&sect.sectname);
 
             let kind_colored = match sect.kind {
-                SectionKind::Code          => format!("{:?}", sect.kind).b_red(),
-                SectionKind::CString       => format!("{:?}", sect.kind).b_green(),
-                SectionKind::Stub          => format!("{:?}", sect.kind).b_yellow(),
-                SectionKind::SymbolPointer => format!("{:?}", sect.kind).b_cyan(),
-                SectionKind::Bss           => format!("{:?}", sect.kind).b_blue(),
-                SectionKind::LinkEdit      => format!("{:?}", sect.kind).b_magenta(),
-                _ => format!("{:?}", sect.kind).into(),
+                // "Top" ones to focus on coloring
+                SectionKind::Code          => format!("{:?}", sect.kind).blue().bold().to_string(),
+                SectionKind::Data          => format!("{:?}", sect.kind).blue().bold().to_string(),
+                SectionKind::ConstData     => format!("{:?}", sect.kind).green().bold().to_string(),
+                SectionKind::CString       => format!("{:?}", sect.kind).green().bold().to_string(),
+                SectionKind::Bss           => format!("{:?}", sect.kind).blue().bold().to_string(),
+
+                // Linker / runtime stuffs
+                SectionKind::Stub          => format!("{:?}", sect.kind).yellow().bold().to_string(),
+                SectionKind::SymbolPointer => format!("{:?}", sect.kind).cyan().bold().to_string(),
+                SectionKind::LinkEdit      => format!("{:?}", sect.kind).magenta().bold().to_string(),
+
+                // ObjC + metadata 
+                SectionKind::ObjC          => format!("{:?}", sect.kind).green().bold().to_string(),
+                SectionKind::ObjCMetadata  => format!("{:?}", sect.kind).green().to_string(),
+
+                // Control-flow and runtime support
+                SectionKind::Init          => format!("{:?}", sect.kind).yellow().bold().to_string(),
+                SectionKind::Exception     => format!("{:?}", sect.kind).yellow().to_string(),
+                SectionKind::Unwind        => format!("{:?}", sect.kind).yellow().to_string(),
+
+                // Debug, Other
+                SectionKind::Debug         => format!("{:?}", sect.kind),
+                SectionKind::Other         => format!("{:?}", sect.kind),
+
+                // This should stand out, we don't know what it is --> we can add it later if commonly seen
+                SectionKind::Unknown       => format!("{:?}", sect.kind).red().bold().to_string(),
             };
+
 
             println!("    - {:<16} {:<14} size={:#x}", sect_name, kind_colored, sect.size);
         }
