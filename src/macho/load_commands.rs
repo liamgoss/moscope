@@ -101,7 +101,7 @@ pub fn print_load_commands(
     load_commands: &Vec<LoadCommand>,
 ) {
     println!();
-    println!("{} {}", "Load Commands Found: ".green(), load_commands.len());
+    println!("{} {}", "Load Commands Found: ".b_green(), load_commands.len());
     println!("----------------------------------------");
     for lc in load_commands {
         println!(" - {:<30} cmd=0x{:08x} size={}", load_comand_name(lc.cmd), lc.cmd, lc.cmdsize);

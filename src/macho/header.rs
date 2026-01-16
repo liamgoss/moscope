@@ -1,5 +1,7 @@
 // File Purpose: "what kind of Mach-O file is this?"
 use std::error::Error;
+use super::constants::*;
+
 use super::utils;
 use super::constants;
 use colorize::AnsiColor;
@@ -32,6 +34,48 @@ pub struct MachOSlice {
     pub offset: u64, // Where this Mach-O binary begins
     pub size: Option<u64>, // how large is the Mach-O (only really important for fat)
 }
+
+pub struct MachOFlag {
+    pub mask: u32,
+    pub name: &'static str,
+}
+
+
+pub const MACHO_FLAGS: &[MachOFlag] = &[
+    MachOFlag { mask: MH_NOUNDEFS, name: "NOUNDEFS" },
+    MachOFlag { mask: MH_INCRLINK, name: "INCRLINK" },
+    MachOFlag { mask: MH_DYLDLINK, name: "DYLDLINK" },
+    MachOFlag { mask: MH_BINDATLOAD, name: "BINDATLOAD" },
+    MachOFlag { mask: MH_PREBOUND, name: "PREBOUND" },
+    MachOFlag { mask: MH_SPLIT_SEGS, name: "SPLIT_SEGS" },
+    MachOFlag { mask: MH_LAZY_INIT, name: "LAZY_INIT" },
+    MachOFlag { mask: MH_TWOLEVEL, name: "TWOLEVEL" },
+    MachOFlag { mask: MH_FORCE_FLAT, name: "FORCE_FLAT" },
+    MachOFlag { mask: MH_NOMULTIDEFS, name: "NOMULTIDEFS" },
+    MachOFlag { mask: MH_NOFIXPREBINDING, name: "NOFIXPREBINDING" },
+    MachOFlag { mask: MH_PREBINDABLE, name: "PREBINDABLE" },
+    MachOFlag { mask: MH_ALLMODSBOUND, name: "ALLMODSBOUND" },
+    MachOFlag { mask: MH_SUBSECTIONS_VIA_SYMBOLS, name: "SUBSECTIONS_VIA_SYMBOLS" },
+    MachOFlag { mask: MH_CANONICAL, name: "CANONICAL" },
+    MachOFlag { mask: MH_WEAK_DEFINES, name: "WEAK_DEFINES" },
+    MachOFlag { mask: MH_BINDS_TO_WEAK, name: "BINDS_TO_WEAK" },
+    MachOFlag { mask: MH_ALLOW_STACK_EXECUTION, name: "ALLOW_STACK_EXECUTION" },
+    MachOFlag { mask: MH_ROOT_SAFE, name: "ROOT_SAFE" },
+    MachOFlag { mask: MH_SETUID_SAFE, name: "SETUID_SAFE" },
+    MachOFlag { mask: MH_NO_REEXPORTED_DYLIBS, name: "NO_REEXPORTED_DYLIBS" },
+    MachOFlag { mask: MH_PIE, name: "PIE" },
+    MachOFlag { mask: MH_DEAD_STRIPPABLE_DYLIB, name: "DEAD_STRIPPABLE_DYLIB" },
+    MachOFlag { mask: MH_HAS_TLV_DESCRIPTORS, name: "HAS_TLV_DESCRIPTORS" },
+    MachOFlag { mask: MH_NO_HEAP_EXECUTION, name: "NO_HEAP_EXECUTION" },
+    MachOFlag { mask: MH_APP_EXTENSION_SAFE, name: "APP_EXTENSION_SAFE" },
+    MachOFlag { mask: MH_NLIST_OUTOFSYNC_WITH_DYLDINFO, name: "NLIST_OUTOFSYNC_WITH_DYLDINFO" },
+    MachOFlag { mask: MH_SIM_SUPPORT, name: "SIM_SUPPORT" },
+    MachOFlag { mask: MH_IMPLICIT_PAGEZERO, name: "IMPLICIT_PAGEZERO" },
+    MachOFlag { mask: MH_DYLIB_IN_CACHE, name: "DYLIB_IN_CACHE" },
+];
+
+
+
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -105,6 +149,19 @@ pub fn print_header_summary(header: &MachOHeader) {
     }
 }
 
+fn parse_flags(flags: u32) -> Vec<&'static str> {
+    // This took quite some time to figure out the best way to do it
+    // I mean I could have done a for loop with masking against all MACH_FLAGs but this is 1) more concise and 2) much cooler
+    MACHO_FLAGS.iter().filter(|f| flags & f.mask != 0).map(|f| f.name).collect()
+
+    // Dear Reader, I'm still learning Rust, so I try to incorporate new things as I learn them and believe they are reasonably applicable.
+    // This comment is to help break this down for my own sanity
+    // .iter()                          --> get an iterator over references to each element in the slice
+    // .filter(|f| flags & f.mask != 0) --> keep only the elements where this condition is true
+    // .map(|f| f.name)                 --> transforms each remaining item from &MachOFlag into &'static str
+    // .collect()                       --> consume iterator and turn it into a collection (which I believe Rust infers into our return type of Vec<&'static str>)
+}
+
 fn print_common_header(
     bits: u32,
     magic: u32,
@@ -115,28 +172,29 @@ fn print_common_header(
     sizeofcmds: u32,
     flags: u32,
 ) {
+    let named_flags = parse_flags(flags);
     println!();
-    println!("{}", "Mach-O Header Summary".green());
+    println!("{}", "Mach-O Header Summary".b_green());
     println!("----------------------------------------");
 
-    println!("{} 0x{:08x}", "  Magic        :".yellow(), magic);
+    println!("{} 0x{:08x}", "  Magic        :".b_yellow(), magic);
 
     println!(
         "{} {} ({})",
-        "  Architecture :".yellow(),
+        "  Architecture :".b_yellow(),
         constants::cpu_type_name(cputype),
         constants::cpu_subtype_name(cputype, cpusubtype),
     );
 
-    println!("{} {}-bit", "  Word size    :".yellow(), bits);
-    println!("{} {}", "  File type    :".yellow(), constants::filetype_name(filetype));
-    println!("{} {}", "  Load cmds    :".yellow(), ncmds);
-    println!("{} {} bytes", "  Cmds size    :".yellow(), sizeofcmds);
-    println!("{} 0x{:08x}", "  Flags        :".yellow(), flags);
-
+    println!("{} {}-bit", "  Word size    :".b_yellow(), bits);
+    println!("{} {}", "  File type    :".b_yellow(), constants::filetype_name(filetype));
+    println!("{} {}", "  Load cmds    :".b_yellow(), ncmds);
+    println!("{} {} bytes", "  Cmds size    :".b_yellow(), sizeofcmds);
+    println!("{} {}", "  Flags        :".b_yellow(), named_flags.join(", "));
     println!("----------------------------------------");
     println!();
 }
+
 
 
 

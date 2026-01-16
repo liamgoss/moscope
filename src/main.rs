@@ -55,7 +55,7 @@ fn display_arch(cputype: i32, cpusubtype: i32) -> (&'static str, &'static str) {
 
 fn fat_binary_user_decision<'a>(archs: &'a [fat::FatArch]) -> Result<&'a fat::FatArch, Box<dyn Error>> {
     // Prompt user if they want to analyze the Intel or Apple Silicon binary (or whichever of the `n`` binaries present)
-    println!("{}", "Available architectures:".green());
+    println!("{}", "Available architectures:".b_green());
     for (i, arch) in archs.iter().enumerate() {
         match arch {
             fat::FatArch::Arch32(a) => {
@@ -101,7 +101,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let macho_slice = match fat::read_fat_header(&data) {
         Ok(fat_header) => {
-            println!("{}", "Fat binary detected:".green());
+            println!("{}", "Fat binary detected:".b_green());
             //println!("{:?}", fat_header);
 
             // Parse all architecture entries described by the fat header
@@ -131,7 +131,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         }
         Err(_) => {
-            println!("{}", "No universal binary detected!".yellow());
+            println!("{}", "No universal binary detected!".b_yellow());
             header::MachOSlice {
                 offset: 0, // Thin binary -> no offset, start right away
                 size: None, // Irrelevant
