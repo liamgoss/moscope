@@ -3,6 +3,7 @@ use crate::macho::constants::*;
 use crate::macho::utils;
 use std::error::Error;
 use colored::Colorize;
+use crate::reporting::load_commands::LoadCommandReport;
 
 
 
@@ -21,7 +22,18 @@ pub struct LoadCommand {
      */
 }
 
-pub fn load_comand_name(cmd: u32) -> &'static str {
+impl LoadCommand {
+    pub fn build_report(&self, is_json: bool) -> LoadCommandReport {
+        LoadCommandReport {
+            command: load_command_name(self.cmd).to_string(),
+            cmd: self.cmd,
+            size: self.cmdsize,
+        }
+    }
+}
+
+
+pub fn load_command_name(cmd: u32) -> &'static str {
     /*
         cmd & LC_REQ_DYLD != 0 // flag
         cmd & !LC_REQ_DYLD // base command
@@ -97,6 +109,8 @@ pub fn load_comand_name(cmd: u32) -> &'static str {
     }
 }
 
+
+
 pub fn print_load_commands(load_commands: &Vec<LoadCommand>) {
     if load_commands.is_empty() {
         return;
@@ -105,7 +119,7 @@ pub fn print_load_commands(load_commands: &Vec<LoadCommand>) {
     println!("{} {}", "Load Commands Found: ".green().bold(), load_commands.len());
     println!("----------------------------------------");
     for lc in load_commands {
-        println!(" - {:<30} cmd=0x{:08x} size={}", load_comand_name(lc.cmd), lc.cmd, lc.cmdsize);
+        println!(" - {:<30} cmd=0x{:08x} size={}", load_command_name(lc.cmd), lc.cmd, lc.cmdsize);
     }
     println!("----------------------------------------");
     println!();    

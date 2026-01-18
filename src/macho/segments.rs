@@ -4,6 +4,7 @@ use std::error::Error;
 use crate::macho::sections::*;
 use crate::macho::utils;
 use colored::Colorize;
+use crate::reporting::segments::SegmentReport;
 
 // https://web.archive.org/web/20260107202245/https://developer.apple.com/library/archive/documentation/Performance/Conceptual/CodeFootprint/Articles/MachOOverview.html
 // https://web.archive.org/web/20250912084041/https://medium.com/@travmath/understanding-the-mach-o-file-format-66cf0354e3f4
@@ -127,6 +128,30 @@ pub struct ParsedSegment {
     pub flags: u32,    
     pub sections: Vec<ParsedSection>,
 }
+
+impl ParsedSegment {
+    pub fn build_report(&self, is_json: bool) -> SegmentReport {
+        
+        let max_prot_r = if self.maxprot & 0x1 != 0 { "R" } else { "-".into() }; 
+        let max_prot_w = if self.maxprot & 0x2 != 0 { "W" } else { "-".into() };
+        let max_prot_x = if self.maxprot & 0x4 != 0 { "X" } else { "-".into() };
+        let init_prot_r = if self.initprot & 0x1 != 0 { "R" } else { "-".into() }; 
+        let init_prot_w = if self.initprot & 0x2 != 0 { "W" } else { "-".into() };
+        let init_prot_x = if self.initprot & 0x4 != 0 { "X" } else { "-".into() };
+        
+        SegmentReport { 
+            name: utils::byte_array_to_string(&self.segname), 
+            vmaddr: self.vmaddr, 
+            vmsize: self.vmsize, 
+            fileoff: self.fileoff, 
+            filesize: self.filesize, 
+            maxprot: format!("{}{}{}", max_prot_r, max_prot_w, max_prot_x), 
+            initprot: format!("{}{}{}", init_prot_r, init_prot_w, init_prot_x), 
+            sections: self.sections.iter().map(|ps| ps.build_report()).collect(), // call the build report func for each section in the vector of parsed sections
+        }
+    }
+}
+
 
 // The layout in the binary, (I believe) is:
 /*

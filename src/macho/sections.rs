@@ -1,6 +1,7 @@
 // File Purpose: Enumerate Sections, Work with segments.rs
 use crate::macho::constants::*;
 use crate::macho::utils;
+use crate::reporting::sections::SectionReport;
 use std::error::Error;
 use std::mem::size_of;
 
@@ -64,6 +65,18 @@ pub struct ParsedSection {
     pub size: u64,         
     pub flags: u32,        
     pub kind: SectionKind, 
+}
+
+impl ParsedSection {
+    pub fn build_report(&self) -> SectionReport {
+        SectionReport { 
+            name: utils::byte_array_to_string(&self.sectname), 
+            segment: utils::byte_array_to_string(&self.segname), 
+            kind: format!("{:?}", self.kind), 
+            addr: self.addr, 
+            size: self.size 
+        }
+    }
 }
 
 pub fn classify_section(sect_name: [u8; 16], sect_type: u32, seg_name: [u8; 16]) -> SectionKind {

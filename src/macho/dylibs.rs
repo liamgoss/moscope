@@ -5,6 +5,7 @@
 use std::error::Error;
 use crate::macho::constants::{LC_ID_DYLIB, LC_LAZY_LOAD_DYLIB, LC_LOAD_DYLIB, LC_LOAD_UPWARD_DYLIB, LC_LOAD_WEAK_DYLIB, LC_REEXPORT_DYLIB};
 use crate::macho::load_commands::LoadCommand;
+use crate::reporting::dylibs::DylibReport;
 use crate::macho::utils;
 use colored::Colorize;
 
@@ -58,6 +59,43 @@ pub struct ParsedDylib {
     pub compatibility_version: u32,
     pub kind: DylibKind,
     pub source_lc: LoadCommand,
+}
+
+impl ParsedDylib {
+    pub fn build_report(&self, json: bool) -> DylibReport {
+        DylibReport { 
+            path: self.path.clone(), 
+            timestamp: self.timestamp, 
+            current_version: self.current_version, 
+            compatibility_version: self.compatibility_version, 
+            kind: if json { self.kind_plain() } else { self.kind_colored() },
+            load_command: self.source_lc.build_report(json), 
+        }
+    }
+
+    fn kind_plain(&self) -> String {
+        match self.kind {
+            DylibKind::Id => "ID",
+            DylibKind::Load => "LOAD",
+            DylibKind::Weak => "WEAK",
+            DylibKind::Reexport => "REEXPORT",
+            DylibKind::Lazy => "LAZY",
+            DylibKind::Upward => "UPWARD",
+            DylibKind::Unknown => "UNKNOWN",
+        }.to_string()
+    }
+
+    fn kind_colored(&self) -> String {
+       match self.kind {
+            DylibKind::Id => "ID".yellow().bold(),
+            DylibKind::Load => "LOAD".yellow().bold(),
+            DylibKind::Weak => "WEAK".yellow().bold(),
+            DylibKind::Reexport => "REEXPORT".yellow().bold(),
+            DylibKind::Lazy => "LAZY".yellow().bold(),
+            DylibKind::Upward => "UPWARD".yellow().bold(),
+            DylibKind::Unknown => "UNKNOWN".red().bold(),
+        }.to_string()
+    }
 }
 
 

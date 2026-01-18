@@ -1,14 +1,21 @@
 // File Purpose: Where is the dynamic loader looking for libraries at runtime?
 
 use std::error::Error;
-use crate::macho::load_commands::LoadCommand;
+use crate::macho::load_commands::{LoadCommand, load_command_name};
 use crate::macho::utils;
 use colored::Colorize;
+use crate::reporting::rpaths::RPathsReport;
 
 #[derive(Debug, Clone)]
 pub struct ParsedRPath {
     pub source_lc: LoadCommand,
     pub path: String,
+}
+
+impl ParsedRPath {
+    pub fn build_report(&self, is_json: bool) -> RPathsReport {
+        RPathsReport { source_lc: load_command_name(self.source_lc.cmd).to_string(), path: self.path.clone() }
+    }
 }
 
 

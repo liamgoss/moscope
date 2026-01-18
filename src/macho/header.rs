@@ -4,7 +4,7 @@ use crate::macho::constants::*;
 use crate::macho::utils;
 use crate::macho::constants;
 use colored::Colorize;
-
+use crate::reporting::header::MachHeaderReport;
 
 
 /*
@@ -108,11 +108,40 @@ pub enum MachOHeader {
     Header64(MachHeader64),
 
 }
+
+impl MachOHeader {
+    pub fn build_report(&self, is_json: bool) -> MachHeaderReport {
+        match self {
+            MachOHeader::Header32(h32) => MachHeaderReport {
+                magic: h32.magic,
+                file_type: constants::filetype_name(h32.filetype).to_string(),
+                cpu_type: constants::cpu_type_name(h32.cputype).to_string(),
+                cpu_subtype: constants::cpu_subtype_name(h32.cputype, h32.cpusubtype).to_string(),
+                ncmds: h32.ncmds,
+                sizeofcmds: h32.sizeofcmds,
+                flags: parse_flags(h32.flags).into_iter().map(|s| s.to_string()).collect(),
+            },
+
+            MachOHeader::Header64(h64) => MachHeaderReport {
+                magic: h64.magic,
+                file_type: constants::filetype_name(h64.filetype).to_string(),
+                cpu_type: constants::cpu_type_name(h64.cputype).to_string(),
+                cpu_subtype: constants::cpu_subtype_name(h64.cputype, h64.cpusubtype).to_string(),
+                ncmds: h64.ncmds,
+                sizeofcmds: h64.sizeofcmds,
+                flags: parse_flags(h64.flags).into_iter().map(|s| s.to_string()).collect(),
+            },
+        }
+    }
+}
+
+
 #[derive(Debug)]
 pub struct ParsedMachOHeader {
     pub kind: MachOKind,
     pub header: MachOHeader,
 }
+
 
 
 
@@ -137,6 +166,8 @@ impl MachOKind {
 
 
 
+
+
 pub fn print_header_summary(header: &MachOHeader) {
     match header {
         MachOHeader::Header32(h) => {
@@ -148,10 +179,10 @@ pub fn print_header_summary(header: &MachOHeader) {
     }
 }
 
-fn parse_flags(flags: u32) -> Vec<&'static str> {
+fn parse_flags(flags: u32) -> Vec<String> {
     // This took quite some time to figure out the best way to do it
     // I mean I could have done a for loop with masking against all MACH_FLAGs but this is 1) more concise and 2) much cooler
-    MACHO_FLAGS.iter().filter(|f| flags & f.mask != 0).map(|f| f.name).collect()
+    MACHO_FLAGS.iter().filter(|f| flags & f.mask != 0).map(|f| f.name.to_string()).collect()
 
     // Dear Reader, I'm still learning Rust, so I try to incorporate new things as I learn them and believe they are reasonably applicable.
     // This comment is to help break this down for my own sanity
