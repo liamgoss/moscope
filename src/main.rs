@@ -2,15 +2,16 @@
 use std::error::Error;
 use std::path::PathBuf;
 
-use moscope::macho::constants::{LC_SEGMENT, LC_SEGMENT_64};
+use moscope::macho::constants::*;
 use moscope::macho::fat;
 use moscope::macho::header;
-use moscope::macho::constants;
 use moscope::macho::load_commands;
+use moscope::macho::rpaths::ParsedRPath;
 use moscope::macho::segments;
+use moscope::macho::dylibs;
+use moscope::macho::rpaths;
 
-use colored::control;
-use colored::Colorize;
+use colored::{control, Colorize};
 use std::io::IsTerminal;
 
 use clap::Parser;
@@ -36,26 +37,26 @@ struct Cli {
 
 
 fn decode_arm64_subtype(cpusubtype: i32) -> &'static str {
-    let base = cpusubtype & !constants::CPU_SUBTYPE_MASK;
-    let has_ptrauth = (cpusubtype & constants::CPU_SUBTYPE_PTRAUTH_ABI) != 0;
+    let base = cpusubtype & !CPU_SUBTYPE_MASK;
+    let has_ptrauth = (cpusubtype & CPU_SUBTYPE_PTRAUTH_ABI) != 0;
 
     if has_ptrauth {
         "arm64e"
     } else {
         match base {
-            constants::CPU_SUBTYPE_ARM64_ALL |
-            constants::CPU_SUBTYPE_ARM64_V8 => "arm64",
+            CPU_SUBTYPE_ARM64_ALL |
+            CPU_SUBTYPE_ARM64_V8 => "arm64",
             _ =>  "arm64 (unknown subtype)",
         }
     }
 }
 
 fn display_arch(cputype: i32, cpusubtype: i32) -> (&'static str, &'static str) {
-    let cpu = constants::cpu_type_name(cputype);
+    let cpu = cpu_type_name(cputype);
 
     let subtype = match cputype {
-        constants::CPU_TYPE_ARM64 => decode_arm64_subtype(cpusubtype),
-        _ => constants::cpu_subtype_name(cputype, cpusubtype),
+        CPU_TYPE_ARM64 => decode_arm64_subtype(cpusubtype),
+        _ => cpu_subtype_name(cputype, cpusubtype),
     };
 
     (cpu, subtype)
@@ -179,10 +180,34 @@ fn main() -> Result<(), Box<dyn Error>> {
     let load_commands = load_commands::read_load_commands(&data, load_command_offset as u32, ncmds, word_size, is_be)?;
     load_commands::print_load_commands(&load_commands);
 
-    // Now check load_commands for LOAD_SEGMENT and LOAD_SEGMENT_64
+    // Currently we just loop over and print the above commands ^ 
+    // But for any LC's we want to actually use or get info about, handle that here:
     let mut parsed_segments = Vec::new();
+    let mut parsed_dylibs = Vec::new();
+    let mut parsed_rpaths = Vec::new();
+
     for lc in load_commands {
-        match lc.cmd {
+        // mask off LC_REQ_DYLD
+        let base_cmd = lc.cmd & !LC_REQ_DYLD;
+
+        match base_cmd {
+            // DYLIB Related Load Commands
+            LC_ID_DYLIB 
+            | LC_LOAD_DYLIB 
+            | LC_LOAD_WEAK_DYLIB 
+            | LC_REEXPORT_DYLIB 
+            | LC_LAZY_LOAD_DYLIB 
+            | LC_LOAD_UPWARD_DYLIB => {
+                let dylib = dylibs::parse_dylib(&data, &lc, is_be)?;
+                parsed_dylibs.push(dylib);
+            }
+
+            LC_RPATH => {   
+                let rpath = rpaths::parse_rpath(&data, &lc, is_be)?;
+                parsed_rpaths.push(rpath);
+            }
+
+            // Segment Related Load Commands
             LC_SEGMENT_64 => {
                 let seg = segments::parse_segment_64(&data, lc.offset as usize, is_be)?;
                 parsed_segments.push(seg);
@@ -194,12 +219,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             _ => {
-                () // ignore non LC_SEGMENT* LC's
+                () // All other LC's we don't handle aside from printing
             }
         }
     }
 
     segments::print_segments_summary(&parsed_segments);
+    dylibs::print_dylibs_summary(&parsed_dylibs);
+    rpaths::print_rpaths_summary(&parsed_rpaths);
 
     Ok(())
 }

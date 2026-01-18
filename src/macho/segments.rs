@@ -201,6 +201,9 @@ pub fn parse_segment_64(data: &[u8], offset: usize, is_be: bool) -> Result<Parse
 
 
 pub fn print_segments_summary(segments: &Vec<ParsedSegment>) {
+    if segments.is_empty() {
+        return;
+    }
     println!();
     println!("{}", "Segments Summary".green().bold());
     println!("----------------------------------------");

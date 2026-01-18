@@ -5,3 +5,5 @@ pub mod utils;
 pub mod load_commands;
 pub mod segments;
 pub mod sections;
+pub mod dylibs;
+pub mod rpaths;

@@ -97,9 +97,10 @@ pub fn load_comand_name(cmd: u32) -> &'static str {
     }
 }
 
-pub fn print_load_commands(
-    load_commands: &Vec<LoadCommand>,
-) {
+pub fn print_load_commands(load_commands: &Vec<LoadCommand>) {
+    if load_commands.is_empty() {
+        return;
+    }
     println!();
     println!("{} {}", "Load Commands Found: ".green().bold(), load_commands.len());
     println!("----------------------------------------");
