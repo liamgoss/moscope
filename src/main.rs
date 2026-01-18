@@ -151,6 +151,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Store ArchitectureReports and parsed structs for printing
     let mut architecture_reports = Vec::new();
+    let mut all_parsed_headers = Vec::new();
     let mut all_parsed_segments = Vec::new();
     let mut all_parsed_dylibs = Vec::new();
     let mut all_parsed_rpaths = Vec::new();
@@ -159,6 +160,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for slice in arch_slices {
         // Read Mach-O header for this slice
         let thin_header: header::ParsedMachOHeader = header::read_thin_header(&data, &slice)?;
+        all_parsed_headers.push(thin_header.header.clone());
 
         // Determine header variant info
         let (header_size, ncmds, word_size, is_be) = match &thin_header.header {
@@ -208,6 +210,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
+        
         // Build architecture report for JSON
         let arch_report = build_architecture_report(
             match &thin_header.header {
@@ -242,11 +245,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         OutputFormat::Text => {
             println!("{}", "Mach-O Report:".green().bold());
             for i in 0..macho_report.architectures.len() {
+                let header = &all_parsed_headers[i]; 
                 let segments = &all_parsed_segments[i];
                 let dylibs = &all_parsed_dylibs[i];
                 let rpaths = &all_parsed_rpaths[i];
                 let load_cmds = &all_load_commands[i];
 
+                header::print_header_summary(header);
                 segments::print_segments_summary(segments);
                 dylibs::print_dylibs_summary(dylibs);
                 rpaths::print_rpaths_summary(rpaths);

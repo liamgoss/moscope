@@ -102,7 +102,7 @@ pub struct MachHeader32 {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MachOHeader {
     Header32(MachHeader32),
     Header64(MachHeader64),
@@ -136,7 +136,7 @@ impl MachOHeader {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedMachOHeader {
     pub kind: MachOKind,
     pub header: MachOHeader,
@@ -275,7 +275,7 @@ pub fn read_thin_header(data: &[u8], slice: &MachOSlice) -> Result<ParsedMachOHe
         };
 
         let header = MachOHeader::Header64(header64);
-        print_header_summary(&header);
+        //print_header_summary(&header);
 
         Ok(ParsedMachOHeader { kind, header })
     }    else {
@@ -290,7 +290,7 @@ pub fn read_thin_header(data: &[u8], slice: &MachOSlice) -> Result<ParsedMachOHe
         };
 
         let header = MachOHeader::Header32(header32);
-        print_header_summary(&header);
+        //print_header_summary(&header);
         Ok(ParsedMachOHeader { kind, header })
     }
 }
