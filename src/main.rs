@@ -184,6 +184,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut parsed_segments = Vec::new();
         let mut parsed_dylibs = Vec::new();
         let mut parsed_rpaths = Vec::new();
+        let mut parsed_symbols: Vec::new();
 
         for lc in &load_commands_vec {
             let base_cmd = lc.cmd & !LC_REQ_DYLD;
@@ -206,6 +207,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 LC_SEGMENT => {
                     parsed_segments.push(segments::parse_segment_32(&data, lc.offset as usize, is_be)?);
                 }
+
+                LC_SYMTAB => {
+                    
+                    
+                }
+
+                LC_DSYMTAB => {
+
+                }
+
                 _ => {}
             }
         }
