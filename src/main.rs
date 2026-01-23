@@ -11,8 +11,11 @@ use moscope::macho::header;
 use moscope::macho::load_commands;
 use moscope::macho::rpaths::ParsedRPath;
 use moscope::macho::segments;
+use moscope::macho::sections::SectionKind;
 use moscope::macho::dylibs;
 use moscope::macho::rpaths;
+use moscope::macho::symtab;
+use moscope::macho::utils::{bytes_to,byte_array_to_string};
 use moscope::reporting::macho::build_architecture_report;
 use moscope::reporting::macho::{MachOReport, ArchitectureReport, build_macho_report};
 use moscope::reporting::header::MachHeaderReport;
@@ -20,6 +23,7 @@ use moscope::reporting::load_commands::LoadCommandReport;
 use moscope::reporting::segments::SegmentReport;
 use moscope::reporting::dylibs::DylibReport;
 use moscope::reporting::rpaths::RPathsReport;
+
 
 use colored::{control, Colorize};
 use serde_json::to_string_pretty;
@@ -53,6 +57,12 @@ struct Cli {
     // JSON or the printed output
     #[clap(value_enum, long, default_value = "text")]
     format: OutputFormat,
+
+    #[arg(long, default_value_t = 4)]
+    min_string_length: usize,
+
+    #[arg(long)]
+    max_num_strings: Option<usize>,
 }
 
 
@@ -119,6 +129,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         control::set_override(false);
     }
 
+    let min_len = cli.min_string_length;
+    let max_count = cli.max_num_strings;
+
     // Read the entire file into memory
     let data = std::fs::read(&cli.binary)
         .map_err(|e| format!("failed to read '{}': {}", cli.binary.display(), e))?;
@@ -150,12 +163,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     // Store ArchitectureReports and parsed structs for printing
+    // all_* is to handle the reports for BOTH slices 
     let mut architecture_reports = Vec::new();
     let mut all_parsed_headers = Vec::new();
     let mut all_parsed_segments = Vec::new();
     let mut all_parsed_dylibs = Vec::new();
     let mut all_parsed_rpaths = Vec::new();
     let mut all_load_commands = Vec::new();
+    let mut all_parsed_symbols: Vec<Vec<symtab::ParsedSymbol>> = Vec::new();
+    let mut all_parsed_strings: Vec<Vec<symtab::ParsedString>> = Vec::new();
 
     for slice in arch_slices {
         // Read Mach-O header for this slice
@@ -184,7 +200,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut parsed_segments = Vec::new();
         let mut parsed_dylibs = Vec::new();
         let mut parsed_rpaths = Vec::new();
-        let mut parsed_symbols: Vec::new();
+        let mut parsed_symbols: Vec<symtab::ParsedSymbol> = Vec::new();
+        let mut parsed_strings = Vec::new();
+
+        // LC_SYMTAB doesn't contain symbols it just declares info
+        // So we need to keep track of it so we can get all the symbols
+        let mut symtab_cmd: Option<symtab::SymtabCommand> = None;
 
         for lc in &load_commands_vec {
             let base_cmd = lc.cmd & !LC_REQ_DYLD;
@@ -209,18 +230,88 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
 
                 LC_SYMTAB => {
-                    
-                    
+                    let cmd = symtab::SymtabCommand {
+                        cmd: lc.cmd,
+                        cmdsize: lc.cmdsize,
+                        symoff: bytes_to(is_be, &data[lc.offset as usize + 8 .. lc.offset as usize + 12])?,
+                        nsyms: bytes_to(is_be, &data[lc.offset as usize + 12 .. lc.offset as usize + 16])?,
+                        stroff: bytes_to(is_be, &data[lc.offset as usize + 16 .. lc.offset as usize + 20])?,
+                        strsize: bytes_to(is_be, &data[lc.offset as usize + 20 .. lc.offset as usize + 24])?,
+                    };
+
+                    symtab_cmd = Some(cmd);   
                 }
-
-                LC_DSYMTAB => {
-
-                }
-
                 _ => {}
             }
         }
 
+        // now we take a look @ our symtab_cmd and parse symbols
+        if let Some(symtab) = symtab_cmd {
+            let sym_base = symtab.symoff as usize;
+            let stroff = slice.offset as usize + symtab.stroff as usize; // have to add the fat offset otherwise we just read garbage
+            let strsize = symtab.strsize as usize;
+
+            for i in 0..symtab.nsyms {
+                let size = if thin_header.kind.is_64() {
+                    symtab::NList64::SIZE
+                } else {
+                    symtab::NList32::SIZE
+                };
+
+                let offset = slice.offset as usize + sym_base + (i as usize) * size; // have to add the fat offset otherwise we just read garbage
+
+
+                let symbol = if thin_header.kind.is_64() {
+                    let nlist = symtab::NList64::parse(&data, offset, is_be)?;
+                    symtab::ParsedSymbol::from_nlist64(nlist, &data, stroff, strsize)
+                } else {
+                    let nlist = symtab::NList32::parse(&data, offset, is_be)?;
+                    symtab::ParsedSymbol::from_nlist32(nlist, &data, stroff, strsize)
+                };
+
+                parsed_symbols.push(symbol);
+            }
+        }
+
+        /*
+        // POSTPONING STRINGS FOR NOW
+        // My implementation is almost there but not quite
+        // I may need to do it like the actual `strings` command and ignore section boundaries
+        //  and scan for any null terminated strings?
+        
+
+        // Before building report grab the strings
+        for segment in &parsed_segments {
+            // O(n^2) right? Is there a better way to do this?
+            for section in &segment.sections {
+                if section.kind == SectionKind::CString && section.size > 0 {
+                    let start = slice.offset as usize + section.offset as usize;
+                    let end = start + section.size as usize;
+                    let sec_bytes = &data[start..end];
+
+                    let mut extracted_strings = symtab::extract_strings(sec_bytes, min_len); // default min length to 3 for now
+                    
+                    // Attach section info to string
+                    // Geez O(n^3) now...
+                    for s in extracted_strings {
+                        if s.is_empty() { continue; } // skip empty strings
+                        println!("STR DEBUG: {:?} in SEGNAME:SECTNAME {:?}:{:?}", s, byte_array_to_string(&segment.segname), byte_array_to_string(&section.sectname));
+                        println!("SLICE OFFSET IS: {:?}", slice.offset);
+                        println!("SECTION OFFSET IS: {:?}", section.offset);
+                        println!("SECTION SIZE IS: {:?}", section.size);
+                        println!("FIRST 16 BYTES: {:?}", &data[slice.offset as usize + section.offset as usize .. slice.offset as usize + section.offset as usize + 16]);
+                        parsed_strings.push(symtab::ParsedString {
+                            value: s,
+                            segname: segment.segname.clone(),
+                            sectname: section.sectname.clone(),
+                        });
+                    }
+                }
+            }
+        
+
+        }
+        */
         
         // Build architecture report for JSON
         let arch_report = build_architecture_report(
@@ -237,6 +328,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             &parsed_segments,
             &parsed_dylibs,
             &parsed_rpaths,
+            &parsed_symbols,
+            &parsed_strings,
             is_json
 
         );
@@ -246,6 +339,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         all_parsed_dylibs.push(parsed_dylibs);
         all_parsed_rpaths.push(parsed_rpaths);
         all_load_commands.push(load_commands_vec);
+        all_parsed_symbols.push(parsed_symbols);
+        all_parsed_strings.push(parsed_strings);
+        
+        
+        
+        // end of this slice
     }
 
     // Build final MachOReport
@@ -261,12 +360,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let dylibs = &all_parsed_dylibs[i];
                 let rpaths = &all_parsed_rpaths[i];
                 let load_cmds = &all_load_commands[i];
+                let symbols = &all_parsed_symbols[i];
+                let strings = &all_parsed_strings[i];
 
                 header::print_header_summary(header);
                 segments::print_segments_summary(segments);
                 dylibs::print_dylibs_summary(dylibs);
                 rpaths::print_rpaths_summary(rpaths);
                 load_commands::print_load_commands(load_cmds);
+                symtab::print_symbols_summary(symbols);
+                symtab::print_strings_summary(strings, min_len, max_count);
             }
         }
         OutputFormat::Json => {

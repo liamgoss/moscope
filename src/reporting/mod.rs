@@ -7,3 +7,4 @@ pub mod segments;
 pub mod sections;
 pub mod rpaths;
 pub mod dylibs;
+pub mod symtab;

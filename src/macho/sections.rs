@@ -61,6 +61,7 @@ pub struct Section64 {      // For 64-bit architectures
 pub struct ParsedSection {
     pub sectname: [u8; 16], 
     pub segname: [u8; 16],  
+    pub offset: u32,
     pub addr: u64,          
     pub size: u64,         
     pub flags: u32,        
@@ -154,6 +155,7 @@ pub fn read_section64_from_bytes(data: &[u8], is_be: bool, sect_offset: usize ) 
     Ok(ParsedSection {
         sectname: sect_name,
         segname: seg_name,
+        offset: sect_offset as u32,
         addr: sect_addr,
         size: sect_size,
         flags: sect_flags,
@@ -191,6 +193,7 @@ pub fn read_section32_from_bytes(
     Ok(ParsedSection {
         sectname: sect_name,
         segname: seg_name,
+        offset: sect_offset as u32,
         addr: sect_addr,
         size: sect_size,
         flags: sect_flags,

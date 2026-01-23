@@ -467,15 +467,40 @@ pub const SECT_ICON_TIFF: [u8; 16] = [
 // ------------------------------------------------------------
 // Symbol Constants
 // ------------------------------------------------------------
-pub const N_STAB: u8    = 0xe0;
-pub const N_PEXT: u8    = 0x10;
-pub const N_TYPE: u8    = 0x0e;
-pub const N_EXT: u8     = 0x01;
-pub const N_UNDF: u8    = 0x00;
-pub const N_ABS: u8     = 0x02;
-pub const N_SECT: u8    = 0x03;
-pub const N_PBUD: u8    = 0x0C;
-pub const N_INDR: u8    = 0x0A;
+// As per nlist.h:
+/*
+The n_type field really contains four fields:
+ *	unsigned char N_STAB:3,
+ *		      N_PEXT:1,
+ *		      N_TYPE:3,
+ *		      N_EXT:1;
+ * which are used via the following masks.
+ * 
+*/
+pub const N_STAB: u8    = 0xe0; // if any of these bits are set, a symbolic debugging entry
+pub const N_PEXT: u8    = 0x10; // private external symbol bit
+pub const N_TYPE: u8    = 0x0e; // mask for the type bits
+pub const N_EXT: u8     = 0x01; // external symbol bit, set for external symbols
+pub const N_UNDF: u8    = 0x00; // undefined, n_sect == NO_SECT
+pub const N_ABS: u8     = 0x02; // absolute, n_sect == NO_SECT
+pub const N_SECT: u8    = 0x0e; // defined in section number n_sect
+pub const N_PBUD: u8    = 0x0C; // prebound undefined (defined in a dylib)
+pub const N_INDR: u8    = 0x0A; // indirect
+pub const NO_SECT: u8   = 0x0e; // sumbol is not in any section
+pub const MAX_SECT: u8  = 0xFF; // 1 thru 255 inclusive
+
+// the constants for the REFERENCE FLAGS are propagated to the reference table
+// in a shared library file. In that case the constant for a defined symbol,
+// REFERENCE_FLAG_DEFINED, is also used
+pub const REFERENCE_TYPE: u8                            = 0x7;
+// types of references
+pub const REFERENCE_FLAG_UNDEFINED_NON_LAZY: u8         = 0x0;
+pub const REFERENCE_FLAG_UNDEFINED_LAZY: u8             = 0x1;
+pub const REFERENCE_FLAG_DEFINED: u8                    = 0x2;
+pub const REFERENCE_FLAG_PRIVATE_DEFINED: u8            = 0x3;
+pub const REFERENCE_FLAG_PRIVATE_UNDEFINED_NON_LAZY: u8 = 0x4;
+pub const REFERENCE_FLAG_PRIVATE_UNDEFINED_LAZY: u8     = 0x5;
+pub const REFERENCED_DYNAMICALLY: u8                    = 0x0010;
 
 
 //
