@@ -24,6 +24,10 @@
   - Displays section names and sizes
   - Classifies sections into semantic categories (code, data, BSS, stubs, symbol pointers, ObjC metadata, unwind info, exceptions, etc.)
   - Correctly handles modern macOS conventions using section type, attributes, and name-based classification
+- Parses and summarized symbols
+  - Extracts all symbol table entries from LC_SYMTAB
+  - Classifies symbols (external, debug, etc.)
+  - Displays symbol names, types, and linkage
 - Provides structured, human-readable output suitable for reverse engineering and binary inspection
 - Exposes functionality through a structured command-line interface (with ANSI coloring, *optionally disabled with the `--no-color` flag*)
 ---
@@ -70,20 +74,21 @@ moscope /path/to/target_binary --format json
 
 Development is focused on incrementally expanding coverage of the Mach-O format while keeping parsing behavior fault tolerant. Near term goals include:
 
+- Demangling
+
 - String Extraction
   - Extract printable strings from the binary
   - Associate strings with sections if/where possible
   - Support basic filtering, sorting by length, case sensitivity, and pattern matching
-- Dependency and Symbol Imports *(WIP)*
-  - List dependent dynamic libraries
-  - Enumerate imported symbols
-  - Distinguish weak imports from required imports
+
 
 This project is intentionally deferring deeper runtime and platform specific features, including chained fixups, Objective-C runtime parsing, Swift metadata, pointer authentication analysis, entitlements, and code signature inspection. These areas will be revisited once core structural coverage is complete.
 
 
 ## Example Output (Thin Binary, Interactive Version)
 ```
+Mach-O Report:
+
 Mach-O Header Summary
 ----------------------------------------
   Magic        : 0xfeedfacf
@@ -95,7 +100,6 @@ Mach-O Header Summary
   Flags        : NOUNDEFS, DYLDLINK, TWOLEVEL, BINDS_TO_WEAK, PIE
 ----------------------------------------
 
-Mach-O Report:
 
 Segments Summary
 ----------------------------------------
@@ -219,24 +223,54 @@ Load Commands Found:  37
  - LC_CODE_SIGNATURE              cmd=0x0000001d size=16
 ----------------------------------------
 
+
+Symbols
+----------------------------------------
+[SECT] EXT                __mh_execute_header
+[UNDEF] EXT                _CFBundleCopyExecutableURL
+[UNDEF] EXT                _CFBundleCreate
+[UNDEF] EXT                _CFRelease
+[UNDEF] EXT                _CFStringCreateWithCString
+[UNDEF] EXT                _CFStringCreateWithFormat
+[UNDEF] EXT                _CFStringGetCString
+[UNDEF] EXT                _CFURLCopyAbsoluteURL
+[UNDEF] EXT                _CFURLCopyFileSystemPath
+[UNDEF] EXT                _CFURLCreateWithFileSystemPath
+[UNDEF] EXT                _NSApp
+[UNDEF] EXT                _NSRunCriticalAlertPanel
+[UNDEF] EXT                _OBJC_CLASS_$_NSBundle
+[UNDEF] EXT                _OBJC_CLASS_$_NSMenuItem
+[UNDEF] EXT                _OBJC_CLASS_$_NSRunningApplication
+[UNDEF] EXT                __DefaultRuneLocale
+[UNDEF] EXT                __Unwind_Resume
+[UNDEF] EXT                __ZN2QT10QArrayData10deallocateEPS0_mm
+[UNDEF] EXT                __ZN2QT10QArrayData11shared_nullE
+[UNDEF] EXT                __ZN2QT10QArrayData8allocateEmmmNS_6QFlagsINS0_16AllocationOptionEEE
+[UNDEF] EXT                __ZN2QT10QBoxLayout10setSpacingEi
+[UNDEF] EXT                __ZN2QT10QBoxLayout10setStretchEii
+[UNDEF] EXT                __ZN2QT10QBoxLayout12insertWidgetEiPNS_7QWidgetEiNS_6QFlagsINS_2Qt13AlignmentFlagEEE
+[UNDEF] EXT                __ZN2QT10QBoxLayout13addSpacerItemEPNS_11QSpacerItemE
+[UNDEF] EXT                __ZN2QT10QBoxLayout13insertStretchEii
+.... [ABRIDGED OUTPUT]
+
 ```
 
 
 ## Example Output (Thin Binary, JSON Output)
 ```JSON
 {
-  "is_fat": false,
+  "is_fat": true,
   "architectures": [
     {
-      "cpu_type": "ARM",
-      "cpu_subtype": "arm64 (ARM64_ALL)",
+      "cpu_type": "x86",
+      "cpu_subtype": "x86_64",
       "header": {
         "magic": 4277009103,
         "file_type": "Demand Paged Executable File [[MH_EXECUTE]]",
-        "cpu_type": "ARM",
-        "cpu_subtype": "arm64 (ARM64_ALL)",
-        "ncmds": 37,
-        "sizeofcmds": 3736,
+        "cpu_type": "x86",
+        "cpu_subtype": "x86_64",
+        "ncmds": 17,
+        "sizeofcmds": 1168,
         "flags": [
           "NOUNDEFS",
           "DYLDLINK",
@@ -254,17 +288,12 @@ Load Commands Found:  37
         {
           "command": "LC_SEGMENT_64",
           "cmd": 25,
-          "size": 952
-        },
-        {
-          "command": "LC_SEGMENT_64",
-          "cmd": 25,
-          "size": 392
-        },
-        {
-          "command": "LC_SEGMENT_64",
-          "cmd": 25,
           "size": 472
+        },
+        {
+          "command": "LC_SEGMENT_64",
+          "cmd": 25,
+          "size": 152
         },
         {
           "command": "LC_SEGMENT_64",
@@ -319,102 +348,12 @@ Load Commands Found:  37
         {
           "command": "LC_LOAD_DYLIB",
           "cmd": 12,
-          "size": 88
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 64
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 72
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 80
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 64
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 88
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 88
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 72
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 104
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 88
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 88
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 80
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 48
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
           "size": 48
         },
         {
           "command": "LC_LOAD_DYLIB",
           "cmd": 12,
           "size": 56
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 104
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 96
-        },
-        {
-          "command": "LC_LOAD_DYLIB",
-          "cmd": 12,
-          "size": 56
-        },
-        {
-          "command": "LC_RPATH",
-          "cmd": 2147483676,
-          "size": 32
-        },
-        {
-          "command": "LC_RPATH",
-          "cmd": 2147483676,
-          "size": 48
         },
         {
           "command": "LC_FUNCTION_STARTS",
@@ -424,11 +363,6 @@ Load Commands Found:  37
         {
           "command": "LC_DATA_IN_CODE",
           "cmd": 41,
-          "size": 16
-        },
-        {
-          "command": "LC_CODE_SIGNATURE",
-          "cmd": 29,
           "size": 16
         }
       ],
@@ -446,9 +380,9 @@ Load Commands Found:  37
         {
           "name": "__TEXT",
           "vmaddr": 4294967296,
-          "vmsize": 4210688,
+          "vmsize": 4096,
           "fileoff": 0,
-          "filesize": 4210688,
+          "filesize": 4096,
           "maxprot": "R-X",
           "initprot": "R-X",
           "sections": [
@@ -456,87 +390,45 @@ Load Commands Found:  37
               "name": "__text",
               "segment": "__TEXT",
               "kind": "Code",
-              "addr": 4294995708,
-              "size": 2889032
+              "addr": 4294968568,
+              "size": 1029
             },
             {
               "name": "__stubs",
               "segment": "__TEXT",
               "kind": "Stub",
-              "addr": 4297884740,
-              "size": 30228
-            },
-            {
-              "name": "__objc_stubs",
-              "segment": "__TEXT",
-              "kind": "Stub",
-              "addr": 4297914968,
-              "size": 736
-            },
-            {
-              "name": "__init_offsets",
-              "segment": "__TEXT",
-              "kind": "Unknown",
-              "addr": 4297915704,
-              "size": 300
+              "addr": 4294969598,
+              "size": 120
             },
             {
               "name": "__gcc_except_tab",
               "segment": "__TEXT",
               "kind": "Exception",
-              "addr": 4297916004,
-              "size": 221516
-            },
-            {
-              "name": "__const",
-              "segment": "__TEXT",
-              "kind": "ConstData",
-              "addr": 4298137520,
-              "size": 818686
+              "addr": 4294969720,
+              "size": 124
             },
             {
               "name": "__cstring",
               "segment": "__TEXT",
               "kind": "CString",
-              "addr": 4298956206,
-              "size": 154779
-            },
-            {
-              "name": "__objc_methname",
-              "segment": "__TEXT",
-              "kind": "CString",
-              "addr": 4299110985,
-              "size": 385
-            },
-            {
-              "name": "__info_plist",
-              "segment": "__TEXT",
-              "kind": "Other",
-              "addr": 4299111370,
-              "size": 1804
+              "addr": 4294969844,
+              "size": 26
             },
             {
               "name": "__unwind_info",
               "segment": "__TEXT",
               "kind": "Unwind",
-              "addr": 4299113176,
-              "size": 64744
-            },
-            {
-              "name": "__eh_frame",
-              "segment": "__TEXT",
-              "kind": "Unknown",
-              "addr": 4299177920,
-              "size": 56
+              "addr": 4294969872,
+              "size": 168
             }
           ]
         },
         {
           "name": "__DATA_CONST",
-          "vmaddr": 4299177984,
-          "vmsize": 278528,
-          "fileoff": 4210688,
-          "filesize": 278528,
+          "vmaddr": 4294971392,
+          "vmsize": 4096,
+          "fileoff": 4096,
+          "filesize": 4096,
           "maxprot": "RW-",
           "initprot": "RW-",
           "sections": [
@@ -544,84 +436,17 @@ Load Commands Found:  37
               "name": "__got",
               "segment": "__DATA_CONST",
               "kind": "SymbolPointer",
-              "addr": 4299177984,
-              "size": 20856
-            },
-            {
-              "name": "__const",
-              "segment": "__DATA_CONST",
-              "kind": "ConstData",
-              "addr": 4299198840,
-              "size": 247368
-            },
-            {
-              "name": "__cfstring",
-              "segment": "__DATA_CONST",
-              "kind": "ObjC",
-              "addr": 4299446208,
-              "size": 448
-            },
-            {
-              "name": "__objc_imageinfo",
-              "segment": "__DATA_CONST",
-              "kind": "ObjCMetadata",
-              "addr": 4299446656,
-              "size": 8
-            }
-          ]
-        },
-        {
-          "name": "__DATA",
-          "vmaddr": 4299456512,
-          "vmsize": 81920,
-          "fileoff": 4489216,
-          "filesize": 65536,
-          "maxprot": "RW-",
-          "initprot": "RW-",
-          "sections": [
-            {
-              "name": "__objc_selrefs",
-              "segment": "__DATA",
-              "kind": "Unknown",
-              "addr": 4299456512,
-              "size": 216
-            },
-            {
-              "name": "__objc_classrefs",
-              "segment": "__DATA",
-              "kind": "ObjC",
-              "addr": 4299456728,
-              "size": 24
-            },
-            {
-              "name": "__data",
-              "segment": "__DATA",
-              "kind": "Data",
-              "addr": 4299456752,
-              "size": 52584
-            },
-            {
-              "name": "__bss",
-              "segment": "__DATA",
-              "kind": "Bss",
-              "addr": 4299509344,
-              "size": 19960
-            },
-            {
-              "name": "__common",
-              "segment": "__DATA",
-              "kind": "Bss",
-              "addr": 4299529312,
-              "size": 7296
+              "addr": 4294971392,
+              "size": 208
             }
           ]
         },
         {
           "name": "__LINKEDIT",
-          "vmaddr": 4299538432,
-          "vmsize": 360448,
-          "fileoff": 4554752,
-          "filesize": 350800,
+          "vmaddr": 4294975488,
+          "vmsize": 4096,
+          "fileoff": 8192,
+          "filesize": 3128,
           "maxprot": "R--",
           "initprot": "R--",
           "sections": []
@@ -629,165 +454,9 @@ Load Commands Found:  37
       ],
       "dylibs": [
         {
-          "path": "@rpath/QtPrintSupport.framework/Versions/5/QtPrintSupport",
-          "timestamp": 2,
-          "current_version": 331523,
-          "compatibility_version": 331520,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 88
-          }
-        },
-        {
-          "path": "@rpath/QtSvg.framework/Versions/5/QtSvg",
-          "timestamp": 2,
-          "current_version": 331522,
-          "compatibility_version": 331520,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 64
-          }
-        },
-        {
-          "path": "@rpath/QtWidgets.framework/Versions/5/QtWidgets",
-          "timestamp": 2,
-          "current_version": 331523,
-          "compatibility_version": 331520,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 72
-          }
-        },
-        {
-          "path": "@rpath/QtMacExtras.framework/Versions/5/QtMacExtras",
-          "timestamp": 2,
-          "current_version": 331522,
-          "compatibility_version": 331520,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 80
-          }
-        },
-        {
-          "path": "@rpath/QtGui.framework/Versions/5/QtGui",
-          "timestamp": 2,
-          "current_version": 331523,
-          "compatibility_version": 331520,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 64
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit",
-          "timestamp": 2,
-          "current_version": 163003497,
-          "compatibility_version": 2949120,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 88
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/Metal.framework/Versions/A/Metal",
-          "timestamp": 2,
-          "current_version": 22483712,
-          "compatibility_version": 65536,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 88
-          }
-        },
-        {
-          "path": "@rpath/QtCore.framework/Versions/5/QtCore",
-          "timestamp": 2,
-          "current_version": 331523,
-          "compatibility_version": 331520,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 72
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/DiskArbitration.framework/Versions/A/DiskArbitration",
-          "timestamp": 2,
-          "current_version": 65536,
-          "compatibility_version": 65536,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 104
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit",
-          "timestamp": 2,
-          "current_version": 18022400,
-          "compatibility_version": 65536,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 88
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL",
-          "timestamp": 2,
-          "current_version": 65536,
-          "compatibility_version": 65536,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 88
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/AGL.framework/Versions/A/AGL",
-          "timestamp": 2,
-          "current_version": 65536,
-          "compatibility_version": 65536,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 80
-          }
-        },
-        {
-          "path": "@rpath/libida.dylib",
-          "timestamp": 2,
-          "current_version": 0,
-          "compatibility_version": 0,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 48
-          }
-        },
-        {
           "path": "/usr/lib/libc++.1.dylib",
           "timestamp": 2,
-          "current_version": 111476485,
+          "current_version": 131088128,
           "compatibility_version": 65536,
           "kind": "LOAD",
           "load_command": {
@@ -799,43 +468,7 @@ Load Commands Found:  37
         {
           "path": "/usr/lib/libSystem.B.dylib",
           "timestamp": 2,
-          "current_version": 88176642,
-          "compatibility_version": 65536,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 56
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
-          "timestamp": 2,
-          "current_version": 164036864,
-          "compatibility_version": 9830400,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 104
-          }
-        },
-        {
-          "path": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
-          "timestamp": 2,
-          "current_version": 164036864,
-          "compatibility_version": 19660800,
-          "kind": "LOAD",
-          "load_command": {
-            "command": "LC_LOAD_DYLIB",
-            "cmd": 12,
-            "size": 96
-          }
-        },
-        {
-          "path": "/usr/lib/libobjc.A.dylib",
-          "timestamp": 2,
-          "current_version": 14942208,
+          "current_version": 88866816,
           "compatibility_version": 65536,
           "kind": "LOAD",
           "load_command": {
@@ -845,18 +478,184 @@ Load Commands Found:  37
           }
         }
       ],
-      "rpaths": [
+      "rpaths": [],
+      "symbols": [
         {
-          "source_lc": "LC_RPATH",
-          "path": "@executable_path/"
+          "name": "__ZNSt3__124__put_character_sequenceB8ne200100IcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m",
+          "value": 4294968720,
+          "kind": "SECT",
+          "section": 1,
+          "external": false,
+          "debug": false
         },
         {
-          "source_lc": "LC_RPATH",
-          "path": "@executable_path/../Frameworks"
-        }
-      ]
-    }
-  ]
-}
+          "name": "__ZNSt3__116__pad_and_outputB8ne200100IcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_",
+          "value": 4294969056,
+          "kind": "SECT",
+          "section": 1,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "___clang_call_terminate",
+          "value": 4294969323,
+          "kind": "SECT",
+          "section": 1,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2B8ne200100Emc",
+          "value": 4294969338,
+          "kind": "SECT",
+          "section": 1,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE20__throw_length_errorB8ne200100Ev",
+          "value": 4294969470,
+          "kind": "SECT",
+          "section": 1,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt3__120__throw_length_errorB8ne200100EPKc",
+          "value": 4294969486,
+          "kind": "SECT",
+          "section": 1,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt12length_errorC1B8ne200100EPKc",
+          "value": 4294969562,
+          "kind": "SECT",
+          "section": 1,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "GCC_except_table0",
+          "value": 4294969720,
+          "kind": "SECT",
+          "section": 3,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "GCC_except_table1",
+          "value": 4294969740,
+          "kind": "SECT",
+          "section": 3,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "GCC_except_table2",
+          "value": 4294969808,
+          "kind": "SECT",
+          "section": 3,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "GCC_except_table6",
+          "value": 4294969828,
+          "kind": "SECT",
+          "section": 3,
+          "external": false,
+          "debug": false
+        },
+        {
+          "name": "__mh_execute_header",
+          "value": 4294967296,
+          "kind": "SECT",
+          "section": 1,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "_main",
+          "value": 4294968568,
+          "kind": "SECT",
+          "section": 1,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__Unwind_Resume",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNKSt3__16locale9use_facetERNS0_2idE",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNKSt3__18ios_base6getlocEv",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt11logic_errorC2EPKc",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt12length_errorD1Ev",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE3putEc",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE5flushEv",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+        {
+          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev",
+          "value": 0,
+          "kind": "UNDEF",
+          "section": null,
+          "external": true,
+          "debug": false
+        },
+...[ABRIDGED OUTPUT]
 
 ```
