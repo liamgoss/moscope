@@ -463,6 +463,19 @@ pub const SECT_ICON_TIFF: [u8; 16] = [
 ];
 
 
+//
+// ------------------------------------------------------------
+// Symbol Constants
+// ------------------------------------------------------------
+pub const N_STAB: u8    = 0xe0;
+pub const N_PEXT: u8    = 0x10;
+pub const N_TYPE: u8    = 0x0e;
+pub const N_EXT: u8     = 0x01;
+pub const N_UNDF: u8    = 0x00;
+pub const N_ABS: u8     = 0x02;
+pub const N_SECT: u8    = 0x03;
+pub const N_PBUD: u8    = 0x0C;
+pub const N_INDR: u8    = 0x0A;
 
 
 //

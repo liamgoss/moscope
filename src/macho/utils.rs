@@ -24,6 +24,17 @@ pub trait FromEndianBytes: Sized {
     fn from_le(bytes: &[u8]) -> Result<Self, Box<dyn Error>>;
 }
 
+impl FromEndianBytes for u16 {
+    const SIZE: usize = 2;
+
+    fn from_be(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
+        Ok(u16::from_be_bytes(bytes.try_into()?))
+    }
+    fn from_le(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
+        Ok(u16::from_le_bytes(bytes.try_into()?))
+    }
+}
+
 impl FromEndianBytes for u32 {
     const SIZE: usize = 4;
 
