@@ -135,7 +135,7 @@ fn fat_binary_filetype_is_execute() {
             },
 
             /*
-            You may think that the below match arm is unreachable...but alas it's now
+            You may think that the below match arm is unreachable...but alas it's not
             This is matching the fat table, not the slices inside the fat
             So the slices / binaries in the fat may be 64 bit but the 
                 fat table can be 32 bit because Apple defaults the fat table

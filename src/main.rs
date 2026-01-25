@@ -273,7 +273,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        /*
+        
         // POSTPONING STRINGS FOR NOW
         // My implementation is almost there but not quite
         // I may need to do it like the actual `strings` command and ignore section boundaries
@@ -311,7 +311,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         
 
         }
-        */
+        
         
         // Build architecture report for JSON
         let arch_report = build_architecture_report(

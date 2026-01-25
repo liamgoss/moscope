@@ -75,7 +75,7 @@ moscope /path/to/target_binary --format json
 Development is focused on incrementally expanding coverage of the Mach-O format while keeping parsing behavior fault tolerant. Near term goals include:
 
 - Demangling
-
+- Output limiting (only output first X number of symbols, strings, etc.)
 - String Extraction
   - Extract printable strings from the binary
   - Associate strings with sections if/where possible

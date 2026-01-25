@@ -146,6 +146,7 @@ pub fn read_section64_from_bytes(data: &[u8], is_be: bool, sect_offset: usize ) 
     let seg_name = data[sect_offset + 16 .. sect_offset + 32].try_into()?;
     let sect_addr = utils::bytes_to(is_be, &data[sect_offset + 32..])?; 
     let sect_size = utils::bytes_to(is_be, &data[sect_offset + 40..])?;
+    let sect_fileoff: u32 = utils::bytes_to(is_be, &data[sect_offset + 48 .. sect_offset + 52])?;
     let sect_flags = utils::bytes_to(is_be, &data[sect_offset + 64..])?;
     
     // classify
@@ -155,7 +156,7 @@ pub fn read_section64_from_bytes(data: &[u8], is_be: bool, sect_offset: usize ) 
     Ok(ParsedSection {
         sectname: sect_name,
         segname: seg_name,
-        offset: sect_offset as u32,
+        offset: sect_fileoff,
         addr: sect_addr,
         size: sect_size,
         flags: sect_flags,
@@ -172,7 +173,7 @@ pub fn read_section32_from_bytes(
 ) -> Result<ParsedSection, Box<dyn Error>> {
 
     // bounds check
-    if sect_offset + size_of::<Section64>() > data.len() {
+    if sect_offset + size_of::<Section>() > data.len() {
         println!("sect_offset {:?} + {:?} exceeds {:?}", sect_offset, size_of::<Section>(), data.len());
         return Err("Section out of bounds".into());
     }
