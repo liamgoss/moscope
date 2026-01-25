@@ -274,15 +274,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         
-        // POSTPONING STRINGS FOR NOW
-        // My implementation is almost there but not quite
-        // I may need to do it like the actual `strings` command and ignore section boundaries
-        //  and scan for any null terminated strings?
         
 
         // Before building report grab the strings
+        // Iterate only __cstring sections; each byte is scanned once
+        // Real cost of this is not O(n^3) like I thought but it's actually roughly O(C + B + K)
+        // C = total number of sections across all segments
+        // B = total bytes scanned in __cstring
+        // K = number of extracted strings
         for segment in &parsed_segments {
-            // O(n^2) right? Is there a better way to do this?
+            
             for section in &segment.sections {
                 if section.kind == SectionKind::CString && section.size > 0 {
                     let start = slice.offset as usize + section.offset as usize;
@@ -292,14 +293,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let mut extracted_strings = symtab::extract_strings(sec_bytes, min_len); // default min length to 3 for now
                     
                     // Attach section info to string
-                    // Geez O(n^3) now...
                     for s in extracted_strings {
                         if s.is_empty() { continue; } // skip empty strings
-                        println!("STR DEBUG: {:?} in SEGNAME:SECTNAME {:?}:{:?}", s, byte_array_to_string(&segment.segname), byte_array_to_string(&section.sectname));
-                        println!("SLICE OFFSET IS: {:?}", slice.offset);
-                        println!("SECTION OFFSET IS: {:?}", section.offset);
-                        println!("SECTION SIZE IS: {:?}", section.size);
-                        println!("FIRST 16 BYTES: {:?}", &data[slice.offset as usize + section.offset as usize .. slice.offset as usize + section.offset as usize + 16]);
                         parsed_strings.push(symtab::ParsedString {
                             value: s,
                             segname: segment.segname.clone(),
