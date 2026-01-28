@@ -268,7 +268,7 @@ pub fn extract_strings(section_data: &[u8], min_len: usize) -> Vec<String> {
             let slice = &section_data[start..start + end];
             if slice.len() >= min_len {
                 if let Ok(s) = std::str::from_utf8(slice) {
-                    strings.push(s.to_string());
+                    strings.push(escape_string(s).to_string());
                 }
             }
 
@@ -281,13 +281,26 @@ pub fn extract_strings(section_data: &[u8], min_len: usize) -> Vec<String> {
     strings
 }
 
-pub fn extract_filtered_strings(section_data: &[u8], pattern: &str) -> Vec<String> {
-    // I'm not a pro @ regex but thankfully this crate should let me 
-    // handle it without knowing every single in and out of regex
-    let re = Regex::new(pattern).unwrap();
-    // get all strings first via min_len = 1
-    extract_strings(section_data, 1).into_iter().filter(|s| re.is_match(s)).collect()
+pub fn extract_filtered_strings(section_data: &[u8], pattern: &str) -> Result<Vec<String>, regex::Error> {
+    let re = Regex::new(pattern)?;
+    // If using regex, we want all strings (min_len = 1)
+    Ok(extract_strings(section_data, 1)
+        .into_iter()
+        .filter(|s| re.is_match(s))
+        .collect())
+}
 
+fn escape_string(s: &str) -> String {
+    s.chars()
+        .flat_map(|c| match c {
+            '\n' => "\\n".chars().collect::<Vec<_>>(),
+            '\r' => "\\r".chars().collect::<Vec<_>>(),
+            '\t' => "\\t".chars().collect::<Vec<_>>(),
+            '\0' => "\\0".chars().collect::<Vec<_>>(),
+            c if c.is_control() => format!("\\x{:02x}", c as u8).chars().collect(),
+            c => vec![c],
+        })
+        .collect()
 }
 
 

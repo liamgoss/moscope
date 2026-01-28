@@ -81,6 +81,21 @@ struct Cli {
     #[arg(long)]
     max_symbols: Option<usize>,
 
+    // String filtering
+    /// Filter strings by regex pattern (e.g., "^http", "\.dylib$", "password")
+    #[arg(long)]
+    string_pattern: Option<String>,
+
+    /// Only extract strings from specific sections (comma-separated)
+    /// Example: --string-sections __cstring,__const
+    #[arg(long, value_delimiter = ',')]
+    string_sections: Option<Vec<String>>,
+
+    /// Skip string extraction from specific sections (comma-separated)
+    /// Example: --skip-sections __objc_methtype
+    #[arg(long, value_delimiter = ',')]
+    skip_sections: Option<Vec<String>>,
+
 }
 
 
@@ -312,10 +327,38 @@ fn main() -> Result<(), Box<dyn Error>> {
         // K = number of extracted strings
         for segment in &parsed_segments {
             for section in &segment.sections {
+                // Check if we should skip this section
+                if let Some(ref skip) = cli.skip_sections {
+                    let sectname = byte_array_to_string(&section.sectname);
+                    if skip.iter().any(|s| sectname == *s) {
+                        continue;
+                    }
+                }
+
+                // Check if we should only process specific sections
+                if let Some(ref only) = cli.string_sections {
+                    let sectname = byte_array_to_string(&section.sectname);
+                    if !only.iter().any(|s| sectname == *s) {
+                        continue;
+                    }
+                }
+
                 if section.kind == SectionKind::CString && section.size > 0 {
                     if let Some(sec_bytes) = vm_image.read_section(section) {
-                        let extracted_strings = symtab::extract_strings(sec_bytes, min_len);
+                        // Use filtered extraction if pattern provided, otherwise normal
+                        let extracted_strings = if let Some(ref pattern) = cli.string_pattern {
+                            match symtab::extract_filtered_strings(sec_bytes, pattern) {
+                                Ok(strings) => strings,
+                                Err(e) => {
+                                    eprintln!("Invalid regex pattern '{}': {}", pattern, e);
+                                    Vec::new()
+                                }
+                            }
+                        } else {
+                            symtab::extract_strings(sec_bytes, min_len)
+                        };
                         
+                        // Attach section info to string
                         for s in extracted_strings {
                             if s.is_empty() { continue; }
                             parsed_strings.push(symtab::ParsedString {
