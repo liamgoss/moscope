@@ -16,6 +16,7 @@ use moscope::macho::dylibs;
 use moscope::macho::rpaths;
 use moscope::macho::symtab;
 use moscope::macho::utils::{bytes_to,byte_array_to_string};
+use moscope::macho::memory_image::MachOMemoryImage;
 use moscope::reporting::macho::build_architecture_report;
 use moscope::reporting::macho::{MachOReport, ArchitectureReport, build_macho_report};
 use moscope::reporting::header::MachHeaderReport;
@@ -63,7 +64,7 @@ struct Cli {
     min_string_length: usize,
 
     #[arg(long)]
-    max_num_strings: Option<usize>,
+    max_strings: Option<usize>,
 
     #[arg(long)]
     no_symbols: bool,
@@ -78,7 +79,7 @@ struct Cli {
     no_header: bool,
 
     #[arg(long)]
-    symbol_limit: Option<usize>,
+    max_symbols: Option<usize>,
 
 }
 
@@ -147,7 +148,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let min_len = cli.min_string_length;
-    let max_count = cli.max_num_strings;
+    let max_count = cli.max_strings;
 
     // Read the entire file into memory
     let data = std::fs::read(&cli.binary)
@@ -268,9 +269,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             let stroff = slice.offset as usize + symtab.stroff as usize; // have to add the fat offset otherwise we just read garbage
             let strsize = symtab.strsize as usize;
 
-            // report up to N symbols where N is defined by the --symbol_limit flag
+            // report up to N symbols where N is defined by the --max_symbols flag
             for i in 0..symtab.nsyms {
-                if let Some(limit) = cli.symbol_limit {
+                if let Some(limit) = cli.max_symbols {
                     if i as usize >= limit {
                         break;
                     }
@@ -296,6 +297,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
+
+        // Strings extraction using the vm addressing instead of file offsets
+        //      because our file offsets method fails for dyld extracted binaries
+        
+        // Build VM image once per slice
+        let vm_image = MachOMemoryImage::new(&parsed_segments, &data, slice.offset);
+
         // Before building report grab the strings
         // Iterate only __cstring sections; each byte is scanned once
         // Real cost of this is not O(n^3) like I thought but it's actually roughly O(C + B + K)
@@ -303,36 +311,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         // B = total bytes scanned in __cstring
         // K = number of extracted strings
         for segment in &parsed_segments {
-            
             for section in &segment.sections {
                 if section.kind == SectionKind::CString && section.size > 0 {
-                    let start = slice.offset as usize + section.offset as usize;
-                    let end = start + section.size as usize;
-
-                    // It's panicking on a dyld-extracted Mach-O
-                    // Adding bounds check to prevent said panic
-                    // until proper dyld aware string extraction is implemented
-                    if start >= data.len() || end > data.len() {
-                        eprintln!(
-                            "[WARN] Skipping section {}:{} because its range is out of file bounds",
-                            byte_array_to_string(&segment.segname),
-                            byte_array_to_string(&section.sectname)
-                        );
-                        continue;
-                    }
-
-                    let sec_bytes = &data[start..end];
-
-                    let mut extracted_strings = symtab::extract_strings(sec_bytes, min_len); // default min length to 3 for now
-                    
-                    // Attach section info to string
-                    for s in extracted_strings {
-                        if s.is_empty() { continue; } // skip empty strings
-                        parsed_strings.push(symtab::ParsedString {
-                            value: s,
-                            segname: segment.segname.clone(),
-                            sectname: section.sectname.clone(),
-                        });
+                    if let Some(sec_bytes) = vm_image.read_section(section) {
+                        let extracted_strings = symtab::extract_strings(sec_bytes, min_len);
+                        
+                        for s in extracted_strings {
+                            if s.is_empty() { continue; }
+                            parsed_strings.push(symtab::ParsedString {
+                                value: s,
+                                segname: segment.segname.clone(),
+                                sectname: section.sectname.clone(),
+                            });
+                        }
                     }
                 }
             }

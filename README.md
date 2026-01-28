@@ -45,12 +45,12 @@ moscope /path/to/target_binary --no-color
 moscope /path/to/target_binary --format json
 
 # Limit the number of symbol entries displayed (e.g., top 10 symbols)
-moscope /path/to/target_binary --symbol-limit 10
+moscope /path/to/target_binary --max-symbols 10
 
 # Adjust string extraction behavior
 #   --min-string-length: ignore strings shorter than the specified length (default: 4)
-#   --max-num-strings: limit the total number of extracted strings
-moscope /path/to/target_binary --min-string-length 6 --max-num-strings 100
+#   --max-strings: limit the total number of extracted strings
+moscope /path/to/target_binary --min-string-length 6 --max-strings 100
 
 # Disable specific sections of the report
 #   --no-symbols: skip symbol table output
