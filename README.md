@@ -35,17 +35,32 @@
 ## Example Usage (Expected to change upon release)
 
 ```bash
-# Inspect a thin or fat Mach-O binary with interactive text output (with color)
+# Inspect a thin or fat Mach-O binary with interactive colored text output (default)
 moscope /path/to/target_binary
 
-# Inspect a thin or fat Mach-O binary with interactive text output (without color)
+# Inspect a binary without color output
 moscope /path/to/target_binary --no-color
 
-# Inspect and output JSON (automatically outputs all architectures if fat)
+# Inspect and output JSON instead of text (good for automation or parsing)
 moscope /path/to/target_binary --format json
 
-# The output is colored by default but can be disabled by using `--no-color`. If `--format json` is used, coloring is disabled automatically
+# Limit the number of symbol entries displayed (e.g., top 10 symbols)
+moscope /path/to/target_binary --symbol-limit 10
 
+# Adjust string extraction behavior
+#   --min-string-length: ignore strings shorter than the specified length (default: 4)
+#   --max-num-strings: limit the total number of extracted strings
+moscope /path/to/target_binary --min-string-length 6 --max-num-strings 100
+
+# Disable specific sections of the report
+#   --no-symbols: skip symbol table output
+#   --no-segments: skip segment information
+#   --no-loadcmds: skip load command information
+#   --no-header: skip Mach-O header output
+moscope /path/to/target_binary --no-symbols --no-segments
+
+# Combine flags for customized output
+moscope /path/to/target_binary --format json --symbol-limit 50 --no-loadcmds
 ```
 
 > This project comes with 3 sample binaries (x86_64, ARM64, FAT) to test with.  
