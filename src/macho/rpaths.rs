@@ -13,7 +13,7 @@ pub struct ParsedRPath {
 }
 
 impl ParsedRPath {
-    pub fn build_report(&self, is_json: bool) -> RPathsReport {
+    pub fn build_report(&self, _is_json: bool) -> RPathsReport {
         RPathsReport { source_lc: load_command_name(self.source_lc.cmd).to_string(), path: self.path.clone() }
     }
 }

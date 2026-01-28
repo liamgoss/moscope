@@ -58,11 +58,28 @@ struct Cli {
     #[clap(value_enum, long, default_value = "text")]
     format: OutputFormat,
 
+    // Flags for output filtering
     #[arg(long, default_value_t = 4)]
     min_string_length: usize,
 
     #[arg(long)]
     max_num_strings: Option<usize>,
+
+    #[arg(long)]
+    no_symbols: bool,
+
+    #[arg(long)]
+    no_segments: bool,
+
+    #[arg(long)]
+    no_loadcmds: bool,
+
+    #[arg(long)]
+    no_header: bool,
+
+    #[arg(long)]
+    symbol_limit: Option<usize>,
+
 }
 
 
@@ -251,7 +268,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             let stroff = slice.offset as usize + symtab.stroff as usize; // have to add the fat offset otherwise we just read garbage
             let strsize = symtab.strsize as usize;
 
+            // report up to N symbols where N is defined by the --symbol_limit flag
             for i in 0..symtab.nsyms {
+                if let Some(limit) = cli.symbol_limit {
+                    if i as usize >= limit {
+                        break;
+                    }
+                }
+
                 let size = if thin_header.kind.is_64() {
                     symtab::NList64::SIZE
                 } else {
@@ -259,7 +283,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 };
 
                 let offset = slice.offset as usize + sym_base + (i as usize) * size; // have to add the fat offset otherwise we just read garbage
-
 
                 let symbol = if thin_header.kind.is_64() {
                     let nlist = symtab::NList64::parse(&data, offset, is_be)?;
@@ -273,9 +296,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        
-        
-
         // Before building report grab the strings
         // Iterate only __cstring sections; each byte is scanned once
         // Real cost of this is not O(n^3) like I thought but it's actually roughly O(C + B + K)
@@ -288,6 +308,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if section.kind == SectionKind::CString && section.size > 0 {
                     let start = slice.offset as usize + section.offset as usize;
                     let end = start + section.size as usize;
+
+                    // It's panicking on a dyld-extracted Mach-O
+                    // Adding bounds check to prevent said panic
+                    // until proper dyld aware string extraction is implemented
+                    if start >= data.len() || end > data.len() {
+                        eprintln!(
+                            "[WARN] Skipping section {}:{} because its range is out of file bounds",
+                            byte_array_to_string(&segment.segname),
+                            byte_array_to_string(&section.sectname)
+                        );
+                        continue;
+                    }
+
                     let sec_bytes = &data[start..end];
 
                     let mut extracted_strings = symtab::extract_strings(sec_bytes, min_len); // default min length to 3 for now
@@ -303,10 +336,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
-        
-
         }
-        
         
         // Build architecture report for JSON
         let arch_report = build_architecture_report(
@@ -326,7 +356,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             &parsed_symbols,
             &parsed_strings,
             is_json
-
         );
 
         architecture_reports.push(arch_report);
@@ -336,8 +365,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         all_load_commands.push(load_commands_vec);
         all_parsed_symbols.push(parsed_symbols);
         all_parsed_strings.push(parsed_strings);
-        
-        
         
         // end of this slice
     }
@@ -358,12 +385,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let symbols = &all_parsed_symbols[i];
                 let strings = &all_parsed_strings[i];
 
-                header::print_header_summary(header);
-                segments::print_segments_summary(segments);
+                if !cli.no_header {
+                    header::print_header_summary(header);
+                }
+                if !cli.no_segments {
+                    segments::print_segments_summary(segments);
+                }
                 dylibs::print_dylibs_summary(dylibs);
                 rpaths::print_rpaths_summary(rpaths);
-                load_commands::print_load_commands(load_cmds);
-                symtab::print_symbols_summary(symbols);
+                if !cli.no_loadcmds {
+                    load_commands::print_load_commands(load_cmds);
+                }
+                if !cli.no_symbols {
+                    symtab::print_symbols_summary(symbols);
+                }
                 symtab::print_strings_summary(strings, min_len, max_count);
             }
         }

@@ -110,7 +110,7 @@ pub enum MachOHeader {
 }
 
 impl MachOHeader {
-    pub fn build_report(&self, is_json: bool) -> MachHeaderReport {
+    pub fn build_report(&self, _is_json: bool) -> MachHeaderReport {
         match self {
             MachOHeader::Header32(h32) => MachHeaderReport {
                 magic: h32.magic,

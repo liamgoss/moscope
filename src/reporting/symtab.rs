@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SymbolReport {
     pub name: Option<String>,
     pub value: u64,
@@ -11,7 +11,7 @@ pub struct SymbolReport {
     pub debug: bool,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct StringReport {
     pub value: String,
     pub segname: String,

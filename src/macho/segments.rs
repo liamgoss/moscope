@@ -130,7 +130,7 @@ pub struct ParsedSegment {
 }
 
 impl ParsedSegment {
-    pub fn build_report(&self, is_json: bool) -> SegmentReport {
+    pub fn build_report(&self, _is_json: bool) -> SegmentReport {
         
         let max_prot_r = if self.maxprot & 0x1 != 0 { "R" } else { "-".into() }; 
         let max_prot_w = if self.maxprot & 0x2 != 0 { "W" } else { "-".into() };

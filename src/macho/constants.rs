@@ -419,6 +419,8 @@ pub const SECT_CFSTRING: [u8; 16] = [
     0, 0, 0, 0, 0, 0
 ];
 
+// Objective-C / Metadata Sections
+
 pub const SECT_OBJC_IMAGEINFO: [u8; 16] = [
     b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'i', b'm', b'a', b'g', b'e', b'i', b'n', b'f', b'o'
 ];
@@ -452,6 +454,77 @@ pub const SECT_OBJC_REFS: [u8; 16] = [
     0
 ];
 
+pub const SECT_OBJC_METHLIST: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'm', b'e', b't', b'h', b'l', b'i', b's', b't',
+    0
+];
+
+pub const SECT_OBJC_CLASSLIST: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'c', b'l', b'a', b's', b's', b'l', b'i', b's', b't'
+];
+
+pub const SECT_OBJC_PROTLIST: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'p', b'r', b'o', b't', b'l', b'i', b's', b't', 0
+];
+
+pub const SECT_OBJC_IVAR: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'i', b'v', b'a', b'r',
+    0, 0, 0, 0, 0
+];
+
+pub const SECT_OBJC_DATA: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'd', b'a', b't', b'a',
+    0, 0, 0, 0, 0
+];
+
+pub const SECT_OBJC_ARRAYDATA: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'a', b'r', b'r', b'a', b'y', b'd', b'a', b't', b'a'
+];
+
+pub const SECT_OBJC_CONST: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'c', b'o', b'n', b's', b't',
+    0, 0, 0, 0
+];
+
+// Auth / Arm64e related sections
+pub const SECT_AUTH_GOT: [u8; 16] = [
+    b'_', b'_', b'a', b'u', b't', b'h', b'_', b'g', b'o', b't',
+    0, 0, 0, 0, 0, 0
+];
+
+pub const SECT_AUTH_PTR: [u8; 16] = [
+    b'_', b'_', b'a', b'u', b't', b'h', b'_', b'p', b't', b'r',
+    0, 0, 0, 0, 0, 0
+];
+
+// CFStrings / literals
+pub const SECT_OBJC_DOUBLEOBJ: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'd', b'o', b'u', b'b', b'l', b'e', b'o', b'b', b'j'
+];
+
+pub const SECT_OBJC_INTOBJ: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'i', b'n', b't', b'o', b'b', b'j', 0, 0, 0
+];
+
+pub const SECT_OBJC_FLOATOBJ: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'f', b'l', b'o', b'a', b't', b'o', b'b', b'j', 0
+];
+
+pub const SECT_OBJC_DICTOBJ: [u8; 16] = [
+    b'_', b'_', b'o', b'b', b'j', b'c', b'_', b'd', b'i', b'c', b't', b'o', b'b', b'j', 0, 0
+];
+
+pub const SECT_CRASH_INFO: [u8; 16] = [
+    b'_', b'_', b'c', b'r', b'a', b's', b'h', b'_', b'i', b'n', b'f', b'o',
+    0, 0, 0, 0
+];
+
+// Misc / small unknowns I've come across in dyld cache binaries
+pub const SECT_USTRING: [u8; 16] = [
+    b'_', b'_', b'u', b's', b't', b'r', b'i', b'n', b'g',
+    0, 0, 0, 0, 0, 0, 0
+];
+
 pub const SECT_ICON_HEADER: [u8; 16] = [
     b'_', b'_', b'h', b'e', b'a', b'd', b'e', b'r',
     0, 0, 0, 0, 0, 0, 0, 0
@@ -460,6 +533,18 @@ pub const SECT_ICON_HEADER: [u8; 16] = [
 pub const SECT_ICON_TIFF: [u8; 16] = [
     b'_', b'_', b't', b'i', b'f', b'f',
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SEG_AUTH_CONST: [u8; 16] = [
+    b'_', b'_', b'A', b'U', b'T', b'H', b'_', b'C', b'O', b'N', b'S', b'T', 0, 0, 0, 0
+];
+
+pub const SEG_AUTH: [u8; 16] = [
+    b'_', b'_', b'A', b'U', b'T', b'H', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+];
+
+pub const SEG_DATA_DIRTY: [u8; 16] = [
+    b'_', b'_', b'D', b'A', b'T', b'A', b'_', b'D', b'I', b'R', b'T', 0, 0, 0, 0, 0
 ];
 
 

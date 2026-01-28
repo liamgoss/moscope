@@ -79,15 +79,18 @@ impl ParsedSection {
         }
     }
 }
-
-pub fn classify_section(sect_name: [u8; 16], sect_type: u32, seg_name: [u8; 16]) -> SectionKind {
+pub fn classify_section(
+    sect_name: [u8; 16],
+    sect_type: u32,
+    seg_name: [u8; 16]
+) -> SectionKind {
     match sect_type {
         S_CSTRING_LITERALS => SectionKind::CString,
         S_ZEROFILL | S_GB_ZEROFILL => SectionKind::Bss,
         S_SYMBOL_STUBS => SectionKind::Stub,
-        S_LAZY_SYMBOL_POINTERS | S_NON_LAZY_SYMBOL_POINTERS => { SectionKind::SymbolPointer }
-        S_MOD_INIT_FUNC_POINTERS | S_MOD_TERM_FUNC_POINTERS => { SectionKind::Init }
-        
+        S_LAZY_SYMBOL_POINTERS | S_NON_LAZY_SYMBOL_POINTERS => SectionKind::SymbolPointer,
+        S_MOD_INIT_FUNC_POINTERS | S_MOD_TERM_FUNC_POINTERS => SectionKind::Init,
+
         // Regular sections (name-based)
         S_REGULAR => {
             match (seg_name, sect_name) {
@@ -103,12 +106,32 @@ pub fn classify_section(sect_name: [u8; 16], sect_type: u32, seg_name: [u8; 16])
                 (SEG_TEXT, SECT_CSTRING) => SectionKind::CString,
                 (SEG_TEXT, SECT_OBJC_METHNAME) => SectionKind::ObjC,
                 (SEG_TEXT, SECT_INFO_PLIST) => SectionKind::Other,
+                (SEG_TEXT, SECT_USTRING) => SectionKind::Other,
 
                 // __DATA_CONST
                 (SEG_DATA_CONST, SECT_CONST) => SectionKind::ConstData,
                 (SEG_DATA_CONST, SECT_CFSTRING) => SectionKind::ObjC,
                 (SEG_DATA_CONST, SECT_OBJC_IMAGEINFO) => SectionKind::ObjCMetadata,
                 (SEG_DATA_CONST, SECT_GOT) => SectionKind::SymbolPointer,
+                (SEG_DATA_CONST, SECT_OBJC_CLASSLIST) => SectionKind::ObjCMetadata, 
+                (SEG_DATA_CONST, SECT_OBJC_PROTLIST) => SectionKind::ObjCMetadata,  
+                (SEG_DATA_CONST, SECT_OBJC_SELREFS) => SectionKind::ObjC,
+                (SEG_DATA_CONST, SECT_OBJC_ARRAYDATA) => SectionKind::ObjC,          
+
+                // __AUTH_CONST 
+                (SEG_AUTH_CONST, SECT_AUTH_GOT) => SectionKind::SymbolPointer,
+                (SEG_AUTH_CONST, SECT_AUTH_PTR) => SectionKind::SymbolPointer,
+                (SEG_AUTH_CONST, SECT_CONST) => SectionKind::ConstData,
+                (SEG_AUTH_CONST, SECT_CFSTRING) => SectionKind::ObjC,
+                (SEG_AUTH_CONST, SECT_OBJC_CONST) => SectionKind::ObjC,
+                (SEG_AUTH_CONST, SECT_OBJC_DOUBLEOBJ) => SectionKind::ObjC,
+                (SEG_AUTH_CONST, SECT_OBJC_INTOBJ) => SectionKind::ObjC,
+                (SEG_AUTH_CONST, SECT_OBJC_FLOATOBJ) => SectionKind::ObjC,
+                (SEG_AUTH_CONST, SECT_OBJC_DICTOBJ) => SectionKind::ObjC,
+
+                // __AUTH
+                (SEG_AUTH, SECT_OBJC_DATA) => SectionKind::ObjC,
+                (SEG_AUTH, SECT_DATA) => SectionKind::Data,
 
                 // __DATA
                 (SEG_DATA, SECT_DATA) => SectionKind::Data,
@@ -124,6 +147,7 @@ pub fn classify_section(sect_name: [u8; 16], sect_type: u32, seg_name: [u8; 16])
                 _ => SectionKind::Unknown,
             }
         }
+
         // Everything else
         _ => {
             if seg_name == SEG_LINKEDIT {
@@ -134,6 +158,7 @@ pub fn classify_section(sect_name: [u8; 16], sect_type: u32, seg_name: [u8; 16])
         }
     }
 }
+
 
 pub fn read_section64_from_bytes(data: &[u8], is_be: bool, sect_offset: usize ) -> Result<ParsedSection, Box<dyn Error>> {
     // bounds check

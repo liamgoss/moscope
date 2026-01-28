@@ -23,7 +23,7 @@ pub struct LoadCommand {
 }
 
 impl LoadCommand {
-    pub fn build_report(&self, is_json: bool) -> LoadCommandReport {
+    pub fn build_report(&self, _is_json: bool) -> LoadCommandReport {
         LoadCommandReport {
             command: load_command_name(self.cmd).to_string(),
             cmd: self.cmd,
