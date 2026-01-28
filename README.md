@@ -1,4 +1,4 @@
-# moscope β Mach-O static analysis and inspection toolkit
+# moscope - Mach-O static analysis and inspection toolkit
 
 `moscope` is a Mach-O static analysis and inspection toolkit written in Rust. It focuses on accurate parsing and interpretation of Mach-O binaries, with an emphasis on universal binaries and architecture specific behavior. This project is intended for reverse engineering, security research, and low level inspection workflows.
 
