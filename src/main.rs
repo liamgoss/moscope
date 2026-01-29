@@ -81,6 +81,9 @@ struct Cli {
     #[arg(long)]
     max_symbols: Option<usize>,
 
+    #[arg(long)]
+    include_debug_symbols: bool,
+
     // String filtering
     /// Filter strings by regex pattern (e.g., "^http", "\.dylib$", "password")
     #[arg(long)]
@@ -163,7 +166,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let min_len = cli.min_string_length;
-    let max_count = cli.max_strings;
+    let max_strings_count = cli.max_strings;
+    let max_symbols_count = cli.max_symbols;
 
     // Read the entire file into memory
     let data = std::fs::read(&cli.binary)
@@ -286,11 +290,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             // report up to N symbols where N is defined by the --max_symbols flag
             for i in 0..symtab.nsyms {
-                if let Some(limit) = cli.max_symbols {
-                    if i as usize >= limit {
-                        break;
-                    }
-                }
 
                 let size = if thin_header.kind.is_64() {
                     symtab::NList64::SIZE
@@ -371,6 +370,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
+
+        // Before building the architecture report, apply max limit if specified
+        if let Some(max) = max_strings_count {
+            parsed_strings.truncate(max);
+        }
+
+        if !cli.include_debug_symbols {  // Take out debug symbols
+            parsed_symbols.retain(|sym| !sym.is_debug);
+        }
+
+        if let Some(limit) = max_symbols_count {
+            parsed_symbols.truncate(limit);
+        }
         
         // Build architecture report for JSON
         let arch_report = build_architecture_report(
@@ -433,7 +445,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if !cli.no_symbols {
                     symtab::print_symbols_summary(symbols);
                 }
-                symtab::print_strings_summary(strings, min_len, max_count);
+                symtab::print_strings_summary(strings, min_len, max_strings_count);
             }
         }
         OutputFormat::Json => {
