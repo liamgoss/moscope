@@ -113,52 +113,76 @@ impl ParsedString {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ParsedSymbol {
-    pub name: Option<String>,
+    pub name: String,
+    pub addr: u64,
     pub value: u64,
     pub kind: SymbolKind,
     pub section: Option<SectionIndex>,
     pub is_external: bool,
     pub is_debug: bool,
+    pub sectname: Option<String>,
+    pub segname: Option<String>,
+    pub n_desc: u16,
+    pub n_type: u8,
+    pub n_sect: u8
 }
 
 impl ParsedSymbol {
     pub fn from_nlist32(nlist: NList32, data: &[u8], str_offset: usize, str_size: usize) -> Self {
         let kind = SymbolKind::from_n_type(nlist.n_type);
-
         let is_debug = (nlist.n_type & N_STAB) != 0;
         let is_external = (nlist.n_type & N_EXT) != 0;
-        let section = if nlist.n_sect == 0 {
-            None
-        } else {
-            Some(SectionIndex(nlist.n_sect))
-        };
+        let section = if nlist.n_sect == 0 { None } else { Some(SectionIndex(nlist.n_sect)) };
+        let name = read_symbol_name(data, str_offset, str_size, nlist.n_strx).unwrap_or_else(|| "N/A".to_string());
 
-        let name = read_symbol_name(data, str_offset, str_size, nlist.n_strx);
-
-        ParsedSymbol { name, value: nlist.n_value as u64, kind, section, is_external, is_debug }
+        ParsedSymbol {
+            name,
+            addr: nlist.n_value as u64,
+            n_type: nlist.n_type,
+            n_sect: nlist.n_sect,
+            n_desc: nlist.n_desc,
+            value: nlist.n_value as u64,
+            kind,
+            section,
+            is_external,
+            is_debug,
+            sectname: None, 
+            segname: None,
+        }
     }
 
     pub fn from_nlist64(nlist: NList64, data: &[u8], str_offset: usize, str_size: usize) -> Self {
         let kind = SymbolKind::from_n_type(nlist.n_type);
-
         let is_debug = (nlist.n_type & N_STAB) != 0;
         let is_external = (nlist.n_type & N_EXT) != 0;
-        let section = if nlist.n_sect == 0 {
-            None
-        } else {
-            Some(SectionIndex(nlist.n_sect))
-        };
+        let section = if nlist.n_sect == 0 { None } else { Some(SectionIndex(nlist.n_sect)) };
+        let name = read_symbol_name(data, str_offset, str_size, nlist.n_strx).unwrap_or_else(|| "N/A".to_string());
+        
 
-        let name = read_symbol_name(data, str_offset, str_size, nlist.n_strx);
-
-        ParsedSymbol { name, value: nlist.n_value, kind, section, is_external, is_debug }
+        ParsedSymbol {
+            name,
+            addr: nlist.n_value as u64,
+            n_type: nlist.n_type,
+            n_sect: nlist.n_sect,
+            n_desc: nlist.n_desc,
+            value: nlist.n_value,
+            kind,
+            section,
+            is_external,
+            is_debug,
+            sectname: None, 
+            segname: None,
+        }
     }
 
     pub fn build_report(&self, json: bool) -> SymbolReport {
         SymbolReport {
             name: self.name.clone(),
             value: self.value,
+            addr: self.addr,
+            addr_hex: format!("0x{:x}", self.addr),
             kind: if json {
                 self.kind_plain()
             } else {
@@ -167,6 +191,8 @@ impl ParsedSymbol {
             section: self.section.map(|s| s.0),
             external: self.is_external,
             debug: self.is_debug,
+            sectname: self.sectname.clone(),
+            segname: self.segname.clone(),
         }
     }
 
@@ -192,7 +218,17 @@ impl ParsedSymbol {
         }.to_string()
     }
 
+    pub fn bind_str(&self) -> &'static str {
+        if self.is_external { "EXT" } else { "LOC" }
+    }
 
+    pub fn sect_str(&self) -> String {
+        self.sectname.clone().unwrap_or_else(|| "-".into())
+    }
+
+    pub fn seg_str(&self) -> String {
+        self.segname.clone().unwrap_or_else(|| "-".into())
+    }
     
 }
 
@@ -206,7 +242,7 @@ pub struct SymtabCommand {
     pub strsize: u32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SectionIndex(pub u8);
 
 impl NList32 {
@@ -304,35 +340,36 @@ fn escape_string(s: &str) -> String {
 }
 
 
-
-pub fn print_symbols_summary(symbols: &Vec<ParsedSymbol>) {
+pub fn print_symbols_summary(symbols: &[ParsedSymbol]) {
     if symbols.is_empty() {
         return;
     }
 
-    println!("{}", "\nSymbols".green().bold());
-    println!("----------------------------------------");
+    println!();
+    println!("{}", "Symbols".green().bold());
+    println!("------------------------------------------------------------");
+    println!("{:<14} {:<8} {:<6} {:<10} {}", 
+        "Address", "Type", "Bind", "Section", "Symbol");
+    println!("------------------------------------------------------------");
 
     for sym in symbols {
-        // lldb skips debug symbols by default 
-        // I feel like debug symbols can be useful information though so I'm unsure
-        // if I should hide or show it by default
-        if sym.is_debug {
-            continue;
-        }
-
-        let name = match &sym.name {
-            Some(s) => s.as_str(),
-            None => "<anonymous>",
-        };
-        let kind = sym.kind_colored();
-
-        if sym.is_external {
-            println!("[{:<6}] {:<18} {}", kind, "EXT", name);
+        // Format address: show '-' if 0
+        let addr_str = if sym.addr == 0 {
+            "-".to_string()
         } else {
-            println!("[{:<6}] {:<18} {}", kind, "", name);
-        }
+            format!("0x{:x}", sym.addr)
+        };
+
+        println!("{:<14} {:<8} {:<6} {:<10} {}", 
+            addr_str, 
+            sym.kind_plain(), 
+            sym.bind_str(), 
+            sym.sect_str(), 
+            sym.name.as_str(),
+        );
     }
+
+    println!("------------------------------------------------------------");
 }
 
 pub fn print_strings_summary(strings: &Vec<ParsedString>, min_len: usize, max_count: Option<usize>) {

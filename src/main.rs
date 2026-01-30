@@ -29,6 +29,7 @@ use moscope::reporting::rpaths::RPathsReport;
 use colored::{control, Colorize};
 use serde_json::to_string_pretty;
 use std::io::IsTerminal;
+use std::collections::HashMap;
 
 use clap::{Parser, ValueEnum};
 
@@ -77,6 +78,15 @@ struct Cli {
 
     #[arg(long)]
     no_header: bool,
+
+    #[arg(long)]
+    no_strings: bool,
+    
+    #[arg(long)]
+    no_dylibs: bool,
+
+    #[arg(long)]
+    no_rpaths: bool,
 
     #[arg(long)]
     max_symbols: Option<usize>,
@@ -311,7 +321,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-
         // Strings extraction using the vm addressing instead of file offsets
         //      because our file offsets method fails for dyld extracted binaries
         
@@ -367,6 +376,31 @@ fn main() -> Result<(), Box<dyn Error>> {
                             });
                         }
                     }
+                }
+            }
+        }
+
+
+        // Put the section data into the hashmap 
+        let mut section_map = HashMap::new();
+            for segment in &parsed_segments {
+                for (i, section) in segment.sections.iter().enumerate() {
+                    let sect_index = symtab::SectionIndex((i + 1) as u8); // sect_index should match n_sect
+                    section_map.insert(sect_index, (
+                        byte_array_to_string(&segment.segname),
+                        byte_array_to_string(&section.sectname),
+                    ));
+                }
+            }
+
+        // Use the hashmap to map symbols to the segments/sections they live in 
+        // I am using the hashmap because the other way I first thought was going to be quadratic time complexity
+        // This should be closer to linear
+        for sym in &mut parsed_symbols {
+            if let Some(idx) = sym.section.map(|s| s.0) {
+                if let Some((segname, sectname)) = section_map.get(&symtab::SectionIndex(idx)) {
+                    sym.segname = Some(segname.clone());   // String
+                    sym.sectname = Some(sectname.clone()); // String
                 }
             }
         }
@@ -437,15 +471,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if !cli.no_segments {
                     segments::print_segments_summary(segments);
                 }
-                dylibs::print_dylibs_summary(dylibs);
-                rpaths::print_rpaths_summary(rpaths);
+                if !cli.no_dylibs {
+                    dylibs::print_dylibs_summary(dylibs);
+                }
+                if !cli.no_rpaths {
+                    rpaths::print_rpaths_summary(rpaths);
+                }
                 if !cli.no_loadcmds {
                     load_commands::print_load_commands(load_cmds);
                 }
                 if !cli.no_symbols {
                     symtab::print_symbols_summary(symbols);
                 }
-                symtab::print_strings_summary(strings, min_len, max_strings_count);
+                if !cli.no_strings {
+                    symtab::print_strings_summary(strings, min_len, max_strings_count);
+                }
             }
         }
         OutputFormat::Json => {

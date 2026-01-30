@@ -163,6 +163,9 @@ moscope /path/to/target_binary --format json --symbol-limit 50 --no-loadcmds
 | `--string-sections <LIST>` | Only extract from these sections (comma-separated) | `moscope binary --string-sections __cstring` |
 | `--skip-sections <LIST>` | Skip these sections (comma-separated) | `moscope binary --skip-sections __objc_methtype` |
 | `--no-symbols` | Skip symbol table output | `moscope binary --no-symbols` |
+| `--no-strings` | Skip strings output | `moscope binary --no-strings` |
+| `--no-dylibs` | Skip dylibs output | `moscope binary --no-dylibs` |
+| `--no-rpaths` | Skip rpaths output | `moscope binary --no-rpaths` |
 | `--no-segments` | Skip segment information | `moscope binary --no-segments` |
 | `--no-loadcmds` | Skip load command information | `moscope binary --no-loadcmds` |
 | `--no-header` | Skip Mach-O header output | `moscope binary --no-header` |
@@ -284,46 +287,32 @@ Load Commands Found:  18
 
 
 Symbols
-----------------------------------------
-[SECT]                    __ZNSt3__124__put_character_sequenceB8ne200100IcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m
-[SECT]                    __ZNSt3__116__pad_and_outputB8ne200100IcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_
-[SECT]                    ___clang_call_terminate
-[SECT]                    __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2B8ne200100Emc
-[SECT]                    __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE20__throw_length_errorB8ne200100Ev
-[SECT]                    __ZNSt3__120__throw_length_errorB8ne200100EPKc
-[SECT]                    __ZNSt12length_errorC1B8ne200100EPKc
-[SECT]                    GCC_except_table0
-[SECT]                    GCC_except_table1
-[SECT]                    GCC_except_table2
-[SECT]                    GCC_except_table6
-[SECT] EXT                __mh_execute_header
-[SECT] EXT                _main
-[UNDEF] EXT                __Unwind_Resume
-[UNDEF] EXT                __ZNKSt3__16locale9use_facetERNS0_2idE
-[UNDEF] EXT                __ZNKSt3__18ios_base6getlocEv
-[UNDEF] EXT                __ZNSt11logic_errorC2EPKc
-[UNDEF] EXT                __ZNSt12length_errorD1Ev
-[UNDEF] EXT                __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE3putEc
-[UNDEF] EXT                __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE5flushEv
-[UNDEF] EXT                __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_
-[UNDEF] EXT                __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev
-[UNDEF] EXT                __ZNSt3__14coutE
-[UNDEF] EXT                __ZNSt3__15ctypeIcE2idE
-[UNDEF] EXT                __ZNSt3__16localeD1Ev
-[UNDEF] EXT                __ZNSt3__18ios_base33__set_badbit_and_consider_rethrowEv
-[UNDEF] EXT                __ZNSt3__18ios_base5clearEj
-[UNDEF] EXT                __ZSt9terminatev
-[UNDEF] EXT                __ZTISt12length_error
-[UNDEF] EXT                __ZTVSt12length_error
-[UNDEF] EXT                __ZdlPv
-[UNDEF] EXT                __Znwm
-[UNDEF] EXT                ___cxa_allocate_exception
-[UNDEF] EXT                ___cxa_begin_catch
-[UNDEF] EXT                ___cxa_end_catch
-[UNDEF] EXT                ___cxa_free_exception
-[UNDEF] EXT                ___cxa_throw
-[UNDEF] EXT                ___gxx_personality_v0
-[UNDEF] EXT                _memset
+------------------------------------------------------------
+Address        Type     Bind   Section    Symbol
+------------------------------------------------------------
+0x100000590    SECT     LOC    __got      __ZNSt3__124__put_character_sequenceB8ne200100IcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m
+0x1000006f8    SECT     LOC    __got      __ZNSt3__116__pad_and_outputB8ne200100IcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_
+0x100000834    SECT     LOC    __got      ___clang_call_terminate
+0x100000844    SECT     LOC    __got      __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2B8ne200100Emc
+0x1000008e0    SECT     LOC    __got      __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE20__throw_length_errorB8ne200100Ev
+0x1000008f4    SECT     LOC    __got      __ZNSt3__120__throw_length_errorB8ne200100EPKc
+0x100000944    SECT     LOC    __got      __ZNSt12length_errorC1B8ne200100EPKc
+0x100000a58    SECT     LOC    __gcc_except_tab GCC_except_table0
+0x100000a6c    SECT     LOC    __gcc_except_tab GCC_except_table1
+0x100000ab0    SECT     LOC    __gcc_except_tab GCC_except_table2
+0x100000ac8    SECT     LOC    __gcc_except_tab GCC_except_table6
+0x100000000    SECT     EXT    __got      __mh_execute_header
+0x1000004e8    SECT     EXT    __got      _main
+-              UNDEF    EXT    -          __Unwind_Resume
+-              UNDEF    EXT    -          __ZNKSt3__16locale9use_facetERNS0_2idE
+-              UNDEF    EXT    -          __ZNKSt3__18ios_base6getlocEv
+-              UNDEF    EXT    -          __ZNSt11logic_errorC2EPKc
+-              UNDEF    EXT    -          __ZNSt12length_errorD1Ev
+-              UNDEF    EXT    -          __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE3putEc
+-              UNDEF    EXT    -          __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE5flushEv
+-              UNDEF    EXT    -          __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_
+-              UNDEF    EXT    -          __ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev
+-              UNDEF    EXT    -          __ZNSt3__14coutE
 
 Strings
 ----------------------------------------
@@ -563,313 +552,121 @@ liam@liam:projects/moscope - (main) >
         {
           "name": "__ZNSt3__124__put_character_sequenceB8ne200100IcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m",
           "value": 4294968720,
+          "addr": 4294968720,
+          "addr_hex": "0x100000590",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__116__pad_and_outputB8ne200100IcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_",
           "value": 4294969056,
+          "addr": 4294969056,
+          "addr_hex": "0x1000006e0",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "___clang_call_terminate",
           "value": 4294969323,
+          "addr": 4294969323,
+          "addr_hex": "0x1000007eb",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2B8ne200100Emc",
           "value": 4294969338,
+          "addr": 4294969338,
+          "addr_hex": "0x1000007fa",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE20__throw_length_errorB8ne200100Ev",
           "value": 4294969470,
+          "addr": 4294969470,
+          "addr_hex": "0x10000087e",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__120__throw_length_errorB8ne200100EPKc",
           "value": 4294969486,
+          "addr": 4294969486,
+          "addr_hex": "0x10000088e",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt12length_errorC1B8ne200100EPKc",
           "value": 4294969562,
+          "addr": 4294969562,
+          "addr_hex": "0x1000008da",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "GCC_except_table0",
           "value": 4294969720,
+          "addr": 4294969720,
+          "addr_hex": "0x100000978",
           "kind": "SECT",
           "section": 3,
+          "sectname": "__gcc_except_tab",
+          "segname": "__TEXT",
           "external": false,
           "debug": false
         },
         {
           "name": "GCC_except_table1",
           "value": 4294969740,
+          "addr": 4294969740,
+          "addr_hex": "0x10000098c",
           "kind": "SECT",
           "section": 3,
+          "sectname": "__gcc_except_tab",
+          "segname": "__TEXT",
           "external": false,
           "debug": false
         },
         {
           "name": "GCC_except_table2",
           "value": 4294969808,
+          "addr": 4294969808,
+          "addr_hex": "0x1000009d0",
           "kind": "SECT",
           "section": 3,
+          "sectname": "__gcc_except_tab",
+          "segname": "__TEXT",
           "external": false,
-          "debug": false
-        },
-        {
-          "name": "GCC_except_table6",
-          "value": 4294969828,
-          "kind": "SECT",
-          "section": 3,
-          "external": false,
-          "debug": false
-        },
-        {
-          "name": "__mh_execute_header",
-          "value": 4294967296,
-          "kind": "SECT",
-          "section": 1,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "_main",
-          "value": 4294968568,
-          "kind": "SECT",
-          "section": 1,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__Unwind_Resume",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNKSt3__16locale9use_facetERNS0_2idE",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNKSt3__18ios_base6getlocEv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt11logic_errorC2EPKc",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt12length_errorD1Ev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE3putEc",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE5flushEv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__14coutE",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__15ctypeIcE2idE",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__16localeD1Ev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__18ios_base33__set_badbit_and_consider_rethrowEv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__18ios_base5clearEj",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZSt9terminatev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZTISt12length_error",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZTVSt12length_error",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZdlPv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__Znwm",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_allocate_exception",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_begin_catch",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_end_catch",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_free_exception",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_throw",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___gxx_personality_v0",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "_memset",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
           "debug": false
         }
       ],
@@ -1113,313 +910,121 @@ liam@liam:projects/moscope - (main) >
         {
           "name": "__ZNSt3__124__put_character_sequenceB8ne200100IcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m",
           "value": 4294968720,
+          "addr": 4294968720,
+          "addr_hex": "0x100000590",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__116__pad_and_outputB8ne200100IcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_",
           "value": 4294969080,
+          "addr": 4294969080,
+          "addr_hex": "0x1000006f8",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "___clang_call_terminate",
           "value": 4294969396,
+          "addr": 4294969396,
+          "addr_hex": "0x100000834",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2B8ne200100Emc",
           "value": 4294969412,
+          "addr": 4294969412,
+          "addr_hex": "0x100000844",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE20__throw_length_errorB8ne200100Ev",
           "value": 4294969568,
+          "addr": 4294969568,
+          "addr_hex": "0x1000008e0",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt3__120__throw_length_errorB8ne200100EPKc",
           "value": 4294969588,
+          "addr": 4294969588,
+          "addr_hex": "0x1000008f4",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "__ZNSt12length_errorC1B8ne200100EPKc",
           "value": 4294969668,
+          "addr": 4294969668,
+          "addr_hex": "0x100000944",
           "kind": "SECT",
           "section": 1,
+          "sectname": "__got",
+          "segname": "__DATA_CONST",
           "external": false,
           "debug": false
         },
         {
           "name": "GCC_except_table0",
           "value": 4294969944,
+          "addr": 4294969944,
+          "addr_hex": "0x100000a58",
           "kind": "SECT",
           "section": 3,
+          "sectname": "__gcc_except_tab",
+          "segname": "__TEXT",
           "external": false,
           "debug": false
         },
         {
           "name": "GCC_except_table1",
           "value": 4294969964,
+          "addr": 4294969964,
+          "addr_hex": "0x100000a6c",
           "kind": "SECT",
           "section": 3,
+          "sectname": "__gcc_except_tab",
+          "segname": "__TEXT",
           "external": false,
           "debug": false
         },
         {
           "name": "GCC_except_table2",
           "value": 4294970032,
+          "addr": 4294970032,
+          "addr_hex": "0x100000ab0",
           "kind": "SECT",
           "section": 3,
+          "sectname": "__gcc_except_tab",
+          "segname": "__TEXT",
           "external": false,
-          "debug": false
-        },
-        {
-          "name": "GCC_except_table6",
-          "value": 4294970056,
-          "kind": "SECT",
-          "section": 3,
-          "external": false,
-          "debug": false
-        },
-        {
-          "name": "__mh_execute_header",
-          "value": 4294967296,
-          "kind": "SECT",
-          "section": 1,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "_main",
-          "value": 4294968552,
-          "kind": "SECT",
-          "section": 1,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__Unwind_Resume",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNKSt3__16locale9use_facetERNS0_2idE",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNKSt3__18ios_base6getlocEv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt11logic_errorC2EPKc",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt12length_errorD1Ev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE3putEc",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE5flushEv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryC1ERS3_",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE6sentryD1Ev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__14coutE",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__15ctypeIcE2idE",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__16localeD1Ev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__18ios_base33__set_badbit_and_consider_rethrowEv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZNSt3__18ios_base5clearEj",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZSt9terminatev",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZTISt12length_error",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZTVSt12length_error",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__ZdlPv",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "__Znwm",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_allocate_exception",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_begin_catch",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_end_catch",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_free_exception",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___cxa_throw",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "___gxx_personality_v0",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
-          "debug": false
-        },
-        {
-          "name": "_memset",
-          "value": 0,
-          "kind": "UNDEF",
-          "section": null,
-          "external": true,
           "debug": false
         }
       ],
