@@ -36,10 +36,10 @@ impl LoadCommand {
 pub fn load_command_name(cmd: u32) -> &'static str {
     /*
         cmd & LC_REQ_DYLD != 0 // flag
-        cmd & !LC_REQ_DYLD // base command
-     */ 
+        cmd & !LC_REQ_DYLD     // base command
+     */
 
-    let _requires_dyld = (cmd & LC_REQ_DYLD) != 0; // Not using at the moment, prefixing w/ underscore
+    let requires_dyld = (cmd & LC_REQ_DYLD) != 0;
     let base_cmd = cmd & !LC_REQ_DYLD;
 
     match base_cmd {
@@ -77,8 +77,7 @@ pub fn load_command_name(cmd: u32) -> &'static str {
         LC_REEXPORT_DYLIB             => "LC_REEXPORT_DYLIB",
         LC_LAZY_LOAD_DYLIB            => "LC_LAZY_LOAD_DYLIB",
         LC_ENCRYPTION_INFO            => "LC_ENCRYPTION_INFO",
-        LC_DYLD_INFO                  => "LC_DYLD_INFO",
-        LC_DYLD_INFO_ONLY             => "LC_DYLD_INFO_ONLY",
+        LC_DYLD_INFO                  => if requires_dyld { "LC_DYLD_INFO_ONLY" } else { "LC_DYLD_INFO" },
         LC_LOAD_UPWARD_DYLIB          => "LC_LOAD_UPWARD_DYLIB",
         LC_VERSION_MIN_MACOSX         => "LC_VERSION_MIN_MACOSX",
         LC_VERSION_MIN_IPHONEOS       => "LC_VERSION_MIN_IPHONEOS",
