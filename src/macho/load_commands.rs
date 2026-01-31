@@ -54,7 +54,7 @@ pub fn load_command_name(cmd: u32) -> &'static str {
         LC_IDENT                      => "LC_IDENT",
         LC_FVMFILE                    => "LC_FVMFILE",
         LC_PREPAGE                    => "LC_PREPAGE",
-        LC_DSYMTAB                    => "LC_DSYMTAB",
+        LC_DYSYMTAB                   => "LC_DYSYMTAB",
         LC_LOAD_DYLIB                 => "LC_LOAD_DYLIB",
         LC_ID_DYLIB                   => "LC_ID_DYLIB",
         LC_LOAD_DYLINKER              => "LC_LOAD_DYLINKER",

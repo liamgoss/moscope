@@ -79,6 +79,9 @@ pub enum SymbolKind {
     Section,            // N_SECT
     PreboundUndefined,  // N_PBUD
     Indirect,           // N_INDR
+    Lazy,               // __la_symbol_ptr
+    Stub,               // __stubs
+    Got,            // __got
     Unknown,
 }
 
@@ -126,7 +129,9 @@ pub struct ParsedSymbol {
     pub segname: Option<String>,
     pub n_desc: u16,
     pub n_type: u8,
-    pub n_sect: u8
+    pub n_sect: u8,
+    pub indirect_addr: Option<u64>,
+    pub indirect_sect: Option<String>,
 }
 
 impl ParsedSymbol {
@@ -150,6 +155,8 @@ impl ParsedSymbol {
             is_debug,
             sectname: None, 
             segname: None,
+            indirect_addr: None,
+            indirect_sect: None,
         }
     }
 
@@ -174,6 +181,8 @@ impl ParsedSymbol {
             is_debug,
             sectname: None, 
             segname: None,
+            indirect_addr: None,
+            indirect_sect: None,
         }
     }
 
@@ -203,6 +212,9 @@ impl ParsedSymbol {
             SymbolKind::Section             => "SECT",
             SymbolKind::PreboundUndefined   => "PBUD",
             SymbolKind::Indirect            => "INDR",
+            SymbolKind::Lazy                => "LAZY",
+            SymbolKind::Stub                => "STUB",
+            SymbolKind::Got                 => "GOT",
             SymbolKind::Unknown             => "UNKNOWN"
         }.to_string()
     }
@@ -214,6 +226,9 @@ impl ParsedSymbol {
             SymbolKind::Section             => "SECT".green().bold(),
             SymbolKind::PreboundUndefined   => "PBUD".yellow().bold(),
             SymbolKind::Indirect            => "INDR".yellow().bold(),
+            SymbolKind::Lazy                => "LAZY".yellow().bold(),
+            SymbolKind::Stub                => "STUB".yellow().bold(),
+            SymbolKind::Got                 => "GOT".yellow().bold(),
             SymbolKind::Unknown             => "UNKNOWN".red().bold(),
         }.to_string()
     }
@@ -240,6 +255,30 @@ pub struct SymtabCommand {
     pub nsyms: u32,
     pub stroff: u32,
     pub strsize: u32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct DYSymtabCommand {
+    pub cmd: u32,
+    pub cmdsize: u32,
+    pub ilocalsym: u32, // index to local symbols
+    pub nlocalsym: u32, // number of local symbols
+    pub iextdefsym: u32, // index to externally defined symbols
+    pub nextdefsym: u32, // number of externally defined symbols
+    pub iundefsym: u32, // index to undefined symbols
+    pub nundefsym: u32, // number of undefined symbols
+    pub tocoff: u32, // file offset to table of contents
+    pub ntoc: u32, // number of entires in table of contents
+    pub modtaboff: u32, // file offset to module table
+    pub nmodtab: u32, // number of module table entires
+    pub extrefsymoff: u32, // offset to referenced symbol table
+    pub nextrefsyms: u32, // number of referenced symbol table entries
+    pub indirectsymoff: u32, // file offset to the indirect symbol table
+    pub nindirectsyms: u32, // number of indirect symbol table entries
+    pub extreloff: u32, // offset to external relocation entries
+    pub nextrel: u32, // number of external relocation entries
+    pub locreloff: u32, // offset to local relocation entires
+    pub nlocrel: u32, // number of local relocation entries
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -340,36 +379,59 @@ fn escape_string(s: &str) -> String {
 }
 
 
+fn sort_addr(sym: &ParsedSymbol) -> Option<u64> {
+    sym.indirect_addr.or_else(|| {
+        if sym.addr != 0 { Some(sym.addr) } else { None }
+    })
+}
+
 pub fn print_symbols_summary(symbols: &[ParsedSymbol]) {
     if symbols.is_empty() {
         return;
     }
 
+    let mut symbols = symbols.to_vec();
+
+    // Sort by address that will be printed with undefined symbols last
+    symbols.sort_by(|a, b| {
+    match (sort_addr(a), sort_addr(b)) {
+        (Some(a_addr), Some(b_addr)) => a_addr.cmp(&b_addr),
+        (Some(_), None) => std::cmp::Ordering::Less,  // addressed first
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    }
+});
+
     println!();
     println!("{}", "Symbols".green().bold());
-    println!("------------------------------------------------------------");
-    println!("{:<14} {:<8} {:<6} {:<10} {}", 
-        "Address", "Type", "Bind", "Section", "Symbol");
-    println!("------------------------------------------------------------");
+    println!("--------------------------------------------------------------------------------");
+    println!(
+        "{:<18} {:<6} {:<5} {:<20} {}",
+        "Address", "Type", "Bind", "Section", "Symbol"
+    );
+    println!("--------------------------------------------------------------------------------");
 
     for sym in symbols {
         // Format address: show '-' if 0
-        let addr_str = if sym.addr == 0 {
-            "-".to_string()
+        let addr_str = if let Some(indirect) = sym.indirect_addr {
+            format!("0x{:016x}", indirect)
+        } else if sym.addr != 0 {
+            format!("0x{:016x}", sym.addr)
         } else {
-            format!("0x{:x}", sym.addr)
+            "-".to_string()
         };
 
-        println!("{:<14} {:<8} {:<6} {:<10} {}", 
-            addr_str, 
-            sym.kind_plain(), 
-            sym.bind_str(), 
-            sym.sect_str(), 
-            sym.name.as_str(),
+        println!(
+            "{:<18} {:<6} {:<5} {:<20} {}",
+            addr_str,
+            sym.kind_plain(),
+            sym.bind_str(),
+            sym.sect_str(),
+            sym.name
         );
     }
 
-    println!("------------------------------------------------------------");
+    println!("--------------------------------------------------------------------------------");
 }
 
 pub fn print_strings_summary(strings: &Vec<ParsedString>, min_len: usize, max_count: Option<usize>) {

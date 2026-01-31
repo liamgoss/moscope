@@ -15,6 +15,7 @@ use moscope::macho::sections::SectionKind;
 use moscope::macho::dylibs;
 use moscope::macho::rpaths;
 use moscope::macho::symtab;
+use moscope::macho::symtab::DYSymtabCommand;
 use moscope::macho::utils::{bytes_to,byte_array_to_string};
 use moscope::macho::memory_image::MachOMemoryImage;
 use moscope::reporting::macho::build_architecture_report;
@@ -253,6 +254,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // LC_SYMTAB doesn't contain symbols it just declares info
         // So we need to keep track of it so we can get all the symbols
         let mut symtab_cmd: Option<symtab::SymtabCommand> = None;
+        let mut dysymtab_cmd: Option<symtab::DYSymtabCommand> = None;
 
         for lc in &load_commands_vec {
             let base_cmd = lc.cmd & !LC_REQ_DYLD;
@@ -288,6 +290,34 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     symtab_cmd = Some(cmd);   
                 }
+
+                LC_DYSYMTAB => {
+                    let off = lc.offset as usize;
+                    let cmd = symtab::DYSymtabCommand {
+                        cmd: lc.cmd,
+                        cmdsize: lc.cmdsize,
+                        ilocalsym:       bytes_to(is_be, &data[off +  8 .. off + 12])?,
+                        nlocalsym:       bytes_to(is_be, &data[off + 12 .. off + 16])?,
+                        iextdefsym:      bytes_to(is_be, &data[off + 16 .. off + 20])?,
+                        nextdefsym:      bytes_to(is_be, &data[off + 20 .. off + 24])?,
+                        iundefsym:       bytes_to(is_be, &data[off + 24 .. off + 28])?,
+                        nundefsym:       bytes_to(is_be, &data[off + 28 .. off + 32])?,
+                        tocoff:          bytes_to(is_be, &data[off + 32 .. off + 36])?,
+                        ntoc:            bytes_to(is_be, &data[off + 36 .. off + 40])?,
+                        modtaboff:       bytes_to(is_be, &data[off + 40 .. off + 44])?,
+                        nmodtab:         bytes_to(is_be, &data[off + 44 .. off + 48])?,
+                        extrefsymoff:    bytes_to(is_be, &data[off + 48 .. off + 52])?,
+                        nextrefsyms:     bytes_to(is_be, &data[off + 52 .. off + 56])?,
+                        indirectsymoff:  bytes_to(is_be, &data[off + 56 .. off + 60])?,
+                        nindirectsyms:   bytes_to(is_be, &data[off + 60 .. off + 64])?,
+                        extreloff:       bytes_to(is_be, &data[off + 64 .. off + 68])?,
+                        nextrel:         bytes_to(is_be, &data[off + 68 .. off + 72])?,
+                        locreloff:       bytes_to(is_be, &data[off + 72 .. off + 76])?,
+                        nlocrel:         bytes_to(is_be, &data[off + 76 .. off + 80])?,
+                    };
+
+                    dysymtab_cmd = Some(cmd);
+                }
                 _ => {}
             }
         }
@@ -319,6 +349,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 parsed_symbols.push(symbol);
             }
+        }
+
+        // now for indirect symbols ingestion
+        let mut indirect_symbols: Option<Vec<u32>> = None;
+        if let Some(dysym) = &dysymtab_cmd {
+            let base = slice.offset as usize + dysym.indirectsymoff as usize;
+
+            let mut table = Vec::with_capacity(dysym.nindirectsyms as usize);
+
+            for i in 0..dysym.nindirectsyms {
+                let off = base + (i as usize * 4);
+                let idx: u32 = bytes_to(is_be, &data[off..off+4])?;
+                table.push(idx);
+            }
+
+            indirect_symbols = Some(table);
         }
 
         // Strings extraction using the vm addressing instead of file offsets
@@ -377,28 +423,68 @@ fn main() -> Result<(), Box<dyn Error>> {
                         }
                     }
                 }
+
+                // If this section uses indirect symbols
+                if let (Some(indirect), Some(_dysym)) = (&indirect_symbols, &dysymtab_cmd) {
+                    if section.kind.uses_indirect_symbols() {
+                        let start = section.reserved1 as usize;
+                        let entry_size = if section.reserved2 != 0 {
+                            section.reserved2 as usize
+                        } else {
+                            8 // arm64 defualt pointer/stub size
+                        };
+
+                        let count = (section.size as usize) / entry_size;
+
+                        for i in 0..count {
+                            let indirect_index = indirect[start + i];
+
+                            // special dyld values
+                            if indirect_index == INDIRECT_SYMBOL_ABS || indirect_index == INDIRECT_SYMBOL_LOCAL {
+                                continue; // skip
+                            }
+
+                            let sym = &mut parsed_symbols[indirect_index as usize];
+
+                            sym.indirect_sect = Some(byte_array_to_string(&section.sectname));
+                            sym.segname = Some(byte_array_to_string(&section.segname));
+                            sym.indirect_addr = Some(section.addr + (i as u64) * entry_size as u64); // now the undefined symbols can have an address like otool -Iv
+                            
+                            if sym.kind == symtab::SymbolKind::Undefined && sym.is_external {
+                                sym.kind = match byte_array_to_string(&section.sectname).as_str() {
+                                    "__la_symbol_ptr" => symtab::SymbolKind::Lazy,
+                                    "__stubs"         => symtab::SymbolKind::Stub,
+                                    "__got"           => symtab::SymbolKind::Got,
+                                    _                 => sym.kind,
+                                };
+                            }
+                        }
+                    }
+                }
+                
             }
         }
 
-
+        
+        let mut global_sect_index: u8 = 1;
         // Put the section data into the hashmap 
         let mut section_map = HashMap::new();
-            for segment in &parsed_segments {
-                for (i, section) in segment.sections.iter().enumerate() {
-                    let sect_index = symtab::SectionIndex((i + 1) as u8); // sect_index should match n_sect
-                    section_map.insert(sect_index, (
-                        byte_array_to_string(&segment.segname),
-                        byte_array_to_string(&section.sectname),
-                    ));
-                }
+        for segment in &parsed_segments {
+            for section in &segment.sections {
+                section_map.insert(global_sect_index, (
+                    byte_array_to_string(&segment.segname),
+                    byte_array_to_string(&section.sectname),
+                ));
+                global_sect_index += 1;
             }
+        }
 
         // Use the hashmap to map symbols to the segments/sections they live in 
         // I am using the hashmap because the other way I first thought was going to be quadratic time complexity
         // This should be closer to linear
         for sym in &mut parsed_symbols {
             if let Some(idx) = sym.section.map(|s| s.0) {
-                if let Some((segname, sectname)) = section_map.get(&symtab::SectionIndex(idx)) {
+                if let Some((segname, sectname)) = section_map.get(&idx) {
                     sym.segname = Some(segname.clone());   // String
                     sym.sectname = Some(sectname.clone()); // String
                 }

@@ -574,6 +574,9 @@ pub const N_INDR: u8    = 0x0A; // indirect
 pub const NO_SECT: u8   = 0x0e; // sumbol is not in any section
 pub const MAX_SECT: u8  = 0xFF; // 1 thru 255 inclusive
 
+pub const INDIRECT_SYMBOL_LOCAL: u32    = 0x80000000; // slot corresponds to a local symbol, not external symbol
+pub const INDIRECT_SYMBOL_ABS: u32      = 0x40000000; // slot is absolute, doesn't reference any symbol
+
 // the constants for the REFERENCE FLAGS are propagated to the reference table
 // in a shared library file. In that case the constant for a defined symbol,
 // REFERENCE_FLAG_DEFINED, is also used
@@ -603,7 +606,7 @@ pub const LC_IDFVMLIB: u32                  = 0x07; // fixed VM shared library i
 pub const LC_IDENT: u32                     = 0x08; // object identification info (obsolete)
 pub const LC_FVMFILE: u32                   = 0x09; // fixed VM file inclusion (internal use)
 pub const LC_PREPAGE: u32                   = 0x0A; // prepage command (internal use)
-pub const LC_DSYMTAB: u32                   = 0x0B; // dynamic link-edit symbol table info
+pub const LC_DYSYMTAB: u32                   = 0x0B; // dynamic link-edit symbol table info
 pub const LC_LOAD_DYLIB: u32                = 0x0C; // load a dynamically linked shared library --> full file path to the dynamically linked shared library
 pub const LC_ID_DYLIB: u32                  = 0x0D; // dynamically linked shared lib ident --> dynamically linked shared locations from the application's current path
 pub const LC_LOAD_DYLINKER: u32             = 0x0E; // load a dynamic linker

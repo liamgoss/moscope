@@ -265,34 +265,44 @@ pub fn print_segments_summary(segments: &Vec<ParsedSegment>) {
             let sect_name = utils::byte_array_to_string(&sect.sectname);
 
             let kind_colored = match sect.kind {
-                // "Top" ones to focus on coloring
-                SectionKind::Code          => format!("{:?}", sect.kind).blue().bold().to_string(),
-                SectionKind::Data          => format!("{:?}", sect.kind).blue().bold().to_string(),
-                SectionKind::ConstData     => format!("{:?}", sect.kind).green().bold().to_string(),
-                SectionKind::CString       => format!("{:?}", sect.kind).green().bold().to_string(),
-                SectionKind::Bss           => format!("{:?}", sect.kind).blue().bold().to_string(),
+                // Executable code
+                SectionKind::Code               => format!("{:?}", sect.kind).blue().bold(),
+                
+                // Symbol stub / pointer consumers
+                SectionKind::SymbolStubs        => format!("{:?}", sect.kind).yellow().bold(),
+                SectionKind::LazySymbolPointers => format!("{:?}", sect.kind).cyan().bold(),
+                SectionKind::NonLazySymbolPointers => format!("{:?}", sect.kind).cyan().bold(),
+                SectionKind::GlobalOffsetTable  => format!("{:?}", sect.kind).cyan().bold(),
 
-                // Linker / runtime stuffs
-                SectionKind::Stub          => format!("{:?}", sect.kind).yellow().bold().to_string(),
-                SectionKind::SymbolPointer => format!("{:?}", sect.kind).cyan().bold().to_string(),
-                SectionKind::LinkEdit      => format!("{:?}", sect.kind).magenta().bold().to_string(),
+                // Data
+                SectionKind::CString            => format!("{:?}", sect.kind).green().bold(),
+                SectionKind::ConstData          => format!("{:?}", sect.kind).green().bold(),
+                SectionKind::Data               => format!("{:?}", sect.kind).blue().bold(),
+                SectionKind::Bss                => format!("{:?}", sect.kind).blue().bold(),
 
-                // ObjC + metadata 
-                SectionKind::ObjC          => format!("{:?}", sect.kind).green().bold().to_string(),
-                SectionKind::ObjCMetadata  => format!("{:?}", sect.kind).green().to_string(),
+                // ObjC
+                SectionKind::ObjCClass          => format!("{:?}", sect.kind).green().bold(),
+                SectionKind::ObjCMetaClass      => format!("{:?}", sect.kind).green(),
+                SectionKind::ObjCSelectorRefs   => format!("{:?}", sect.kind).green(),
+                SectionKind::ObjCMethodNames    => format!("{:?}", sect.kind).green(),
+                SectionKind::ObjCMetadata       => format!("{:?}", sect.kind).green(),
 
-                // Control-flow and runtime support
-                SectionKind::Init          => format!("{:?}", sect.kind).yellow().bold().to_string(),
-                SectionKind::Exception     => format!("{:?}", sect.kind).yellow().to_string(),
-                SectionKind::Unwind        => format!("{:?}", sect.kind).yellow().to_string(),
+                // Exceptions / unwind
+                SectionKind::Exception          => format!("{:?}", sect.kind).yellow(),
+                SectionKind::Unwind             => format!("{:?}", sect.kind).yellow(),
 
-                // Debug, Other
-                SectionKind::Debug         => format!("{:?}", sect.kind),
-                SectionKind::Other         => format!("{:?}", sect.kind),
+                // Init
+                SectionKind::Init               => format!("{:?}", sect.kind).yellow().bold(),
 
-                // This should stand out, we don't know what it is --> we can add it later if commonly seen
-                SectionKind::Unknown       => format!("{:?}", sect.kind).red().bold().to_string(),
+                // Debug / LinkEdit
+                SectionKind::Debug              => format!("{:?}", sect.kind).normal(),
+                SectionKind::LinkEdit           => format!("{:?}", sect.kind).magenta().bold(),
+
+                // Fallbacks
+                SectionKind::Other              => format!("{:?}", sect.kind).normal(),
+                SectionKind::Unknown            => format!("{:?}", sect.kind).red().bold(),
             };
+
 
 
             println!("    - {:<16} {:<14} size={:#x}", sect_name, kind_colored, sect.size);
