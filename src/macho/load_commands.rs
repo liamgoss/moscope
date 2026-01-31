@@ -42,12 +42,8 @@ pub fn load_command_name(cmd: u32) -> &'static str {
     let _requires_dyld = (cmd & LC_REQ_DYLD) != 0; // Not using at the moment, prefixing w/ underscore
     let base_cmd = cmd & !LC_REQ_DYLD;
 
-    match base_cmd { // Is there any better way to do this? This feels wrong, is there a way to like reflect the variable names back based on their value?
-        // This should be O(1) so I guess it's not inefficient it's just a hassle to type which is fine.
-        // According to the interwebs, it may go up to linear time depending on number of elements and compiler optimizations...
-
-        // NOTE: I had ChatGPT 5.2 take my constants.rs snippet and spit this out so I didn't have to type it.
-        // I made sure everything is present except LC_REQ_DYLD which was masked off
+    match base_cmd {
+        // LC_REQ_DYLD masked off
         LC_SEGMENT                    => "LC_SEGMENT",
         LC_SYMTAB                     => "LC_SYMTAB",
         LC_SYMSEG                     => "LC_SYMSEG",
@@ -82,6 +78,7 @@ pub fn load_command_name(cmd: u32) -> &'static str {
         LC_LAZY_LOAD_DYLIB            => "LC_LAZY_LOAD_DYLIB",
         LC_ENCRYPTION_INFO            => "LC_ENCRYPTION_INFO",
         LC_DYLD_INFO                  => "LC_DYLD_INFO",
+        LC_DYLD_INFO_ONLY             => "LC_DYLD_INFO_ONLY",
         LC_LOAD_UPWARD_DYLIB          => "LC_LOAD_UPWARD_DYLIB",
         LC_VERSION_MIN_MACOSX         => "LC_VERSION_MIN_MACOSX",
         LC_VERSION_MIN_IPHONEOS       => "LC_VERSION_MIN_IPHONEOS",
