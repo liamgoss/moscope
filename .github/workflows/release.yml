@@ -9,8 +9,11 @@ permissions:
   contents: write
 
 jobs:
+  # ------------------------------
+  # Build job: compile binaries and upload artifacts
+  # ------------------------------
   build:
-    name: Build and upload binaries
+    name: Build binaries
     strategy:
       fail-fast: false
       matrix:
@@ -49,14 +52,35 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Prepare artifact
+      - name: Package binary
         shell: bash
         run: |
           mkdir -p dist
           cp target/${{ matrix.target }}/release/${{ matrix.bin }} dist/${{ matrix.asset }}
 
-      - name: Upload to GitHub Release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+
+  # ------------------------------
+  # Release job: download artifacts and create GitHub release
+  # ------------------------------
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: dist/**/*
           fail_on_unmatched_files: true
+          overwrite_files: true
