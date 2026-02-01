@@ -443,9 +443,24 @@ fn main() -> Result<(), Box<dyn Error>> {
                             8 // arm64 defualt pointer/stub size
                         };
 
-                        let count = (section.size as usize) / entry_size;
+                        let count = (section.size as usize) / entry_size; 
 
-                        for i in 0..count {
+                        let end = (start + count).min(indirect.len());
+
+                        if start >= indirect.len() {
+                            continue; // section is bogus? metadata incorrect? 
+                        }
+
+                        // Alright we have some new bounds checking here
+                        // When testing on our sample binaries, nothing was wrong
+                        // But one real binary on my mac panicked with:
+                        //      index out of bounds: the len is 2349 but the index is 2349
+                        // count --> What the section claims it needs (derived, anyway)
+                        // max_count --> how many entries actually exist from `start` to the end of the indirect table
+                        // safe_count --> the smaller of the two
+                        let max_count = indirect.len() - start;
+                        let safe_count = count.min(max_count);
+                        for i in 0..safe_count {
                             let indirect_index = indirect[start + i];
 
                             // special dyld values
