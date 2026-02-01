@@ -1,4 +1,5 @@
 use std::error::Error;
+use clap::parser::Indices;
 use colored::Colorize;
 use regex::Regex;
 use crate::macho::utils;
@@ -186,12 +187,23 @@ impl ParsedSymbol {
         }
     }
 
+    pub fn effective_addr(&self) -> Option<u64> {
+        if let Some(indirect) = self.indirect_addr {
+            Some(indirect)
+        } else if self.addr != 0 {
+            Some(self.addr)
+        } else {
+            None
+        }
+    }
+
     pub fn build_report(&self, json: bool) -> SymbolReport {
+        let eff_addr = self.effective_addr();
         SymbolReport {
             name: self.name.clone(),
             value: self.value,
             addr: self.addr,
-            addr_hex: format!("0x{:x}", self.addr),
+            addr_hex: eff_addr.map(|a| format!("0x{:016x}", a)).unwrap_or_else(|| "-".to_string()),
             kind: if json {
                 self.kind_plain()
             } else {
@@ -391,16 +403,8 @@ pub fn print_symbols_summary(symbols: &[ParsedSymbol]) {
     }
 
     let mut symbols = symbols.to_vec();
-
-    // Sort by address that will be printed with undefined symbols last
-    symbols.sort_by(|a, b| {
-    match (sort_addr(a), sort_addr(b)) {
-        (Some(a_addr), Some(b_addr)) => a_addr.cmp(&b_addr),
-        (Some(_), None) => std::cmp::Ordering::Less,  // addressed first
-        (None, Some(_)) => std::cmp::Ordering::Greater,
-        (None, None) => std::cmp::Ordering::Equal,
-    }
-});
+    sort_symbols(&mut symbols);
+    
 
     println!();
     println!("{}", "Symbols".green().bold());
@@ -413,13 +417,7 @@ pub fn print_symbols_summary(symbols: &[ParsedSymbol]) {
 
     for sym in symbols {
         // Format address: show '-' if 0
-        let addr_str = if let Some(indirect) = sym.indirect_addr {
-            format!("0x{:016x}", indirect)
-        } else if sym.addr != 0 {
-            format!("0x{:016x}", sym.addr)
-        } else {
-            "-".to_string()
-        };
+        let addr_str = sym.effective_addr().map(|a| format!("0x{:016x}", a)).unwrap_or_else(|| "-".to_string());
 
         println!(
             "{:<18} {:<6} {:<5} {:<20} {}",
@@ -458,4 +456,16 @@ pub fn print_strings_summary(strings: &Vec<ParsedString>, min_len: usize, max_co
 
         println!("[{}:{}] {}", segname, sectname, s.value);
     }
+}
+
+pub fn sort_symbols(symbols: &mut Vec<ParsedSymbol>) {
+    // Sort by address that will be printed with undefined symbols last
+    symbols.sort_by(|a, b| {
+        match (a.effective_addr(), b.effective_addr()) {
+            (Some(a), Some(b)) => a.cmp(&b),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => std::cmp::Ordering::Equal,
+        }
+    });
 }

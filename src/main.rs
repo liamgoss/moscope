@@ -18,8 +18,7 @@ use moscope::macho::symtab;
 use moscope::macho::symtab::DYSymtabCommand;
 use moscope::macho::utils::{bytes_to,byte_array_to_string};
 use moscope::macho::memory_image::MachOMemoryImage;
-use moscope::reporting::macho::build_architecture_report;
-use moscope::reporting::macho::{MachOReport, ArchitectureReport, build_macho_report};
+use moscope::reporting::macho::{MachOReport, ArchitectureReport, build_macho_report, build_architecture_report, ReportOptions};
 use moscope::reporting::header::MachHeaderReport;
 use moscope::reporting::load_commands::LoadCommandReport;
 use moscope::reporting::segments::SegmentReport;
@@ -175,6 +174,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     if cli.no_color || !std::io::stdout().is_terminal() {
         control::set_override(false);
     }
+
+    let report_opts = ReportOptions {
+        include_header: !cli.no_header,
+        include_segments: !cli.no_segments,
+        include_dylibs: !cli.no_dylibs,
+        include_rpaths: !cli.no_rpaths,
+        include_loadcmds: !cli.no_loadcmds,
+        include_symbols: !cli.no_symbols,
+        include_strings: !cli.no_strings,
+    };
 
     let min_len = cli.min_string_length;
     let max_strings_count = cli.max_strings;
@@ -521,7 +530,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             &parsed_rpaths,
             &parsed_symbols,
             &parsed_strings,
-            is_json
+            is_json,
+            &report_opts,
         );
 
         architecture_reports.push(arch_report);
