@@ -97,6 +97,71 @@ pub fn byte_array_to_string(bytes: &[u8; 16]) -> String {
     // tl;dr take byte array --> replace invalid utf --> clone the cow
 }
 
+
+pub fn read_uleb(data: &[u8], cursor: &mut usize) -> Result<u64, Box<dyn Error>> {
+    // uleb128 = unsigned little endian base 128
+    // Using the druntime implementation of reading it
+    // Since that it what a half-decade-old stack overflow post pointed me to
+    // https://github.com/dlang/druntime/blob/0dfc0ce5aef1fde00713b56e9be99dcdfb04d171/src/rt/backtrace/dwarf.d#L490-L534
+    let mut result: u64 = 0;
+    let mut shift: u32 = 0;
+    loop {
+        if *cursor >= data.len() {
+            return Err("read_uleb: cursor out of bounds".into());
+        }
+        let byte = data[*cursor];
+        *cursor += 1; // dereffing to advance the func caller's cursor 
+        result |= ((byte & 0x7F) as u64) << shift; // bitwise or w/ 127 then shift
+        shift += 7;
+        if (byte & 0x80) == 0 { // MSB not set, no more to decode
+            break;
+        }
+
+        if shift >= 64 {
+            return Err("read_uleb: shift overflow (>64 bits)".into());
+        }
+        
+    }
+    Ok(result)
+}
+
+
+
+pub fn read_sleb(data: &[u8], cursor: &mut usize) -> Result<i64, Box<dyn Error>> {
+    // sleb128 = signed little endian base 128
+    let mut result: i64 = 0;
+    let mut shift: u32 = 0;
+    let size = 8 << 3; // 64 bits
+    let mut byte: u8;
+
+    loop {
+        if *cursor >= data.len() {
+            return Err("read_sleb: cursor out of bounds".into());
+        }
+
+        byte = data[*cursor];
+        *cursor += 1;
+
+        result |= ((byte & 0x7F) as i64) << shift;
+        shift += 7;
+
+        if (byte & 0x80) == 0 {
+            break;
+        }
+
+        if shift >= 64 {
+            return Err("read_sleb: shift overflow (>64 bits)".into());
+        }
+    }
+
+    // sign extend
+    if (shift < size) && (byte & 0x40) != 0 {
+        result |= -(1 << shift);
+    }
+
+    Ok(result)
+}
+
 /*
 ============================
 ======== UNIT TESTS ========

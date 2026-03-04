@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+use crate::reporting::dyld::FixupReport;
 use crate::reporting::header::MachHeaderReport;
 use crate::reporting::load_commands::LoadCommandReport;
 use crate::reporting::segments::SegmentReport;
@@ -11,6 +12,7 @@ use crate::macho::header::MachOHeader;
 use crate::macho::load_commands::LoadCommand;
 use crate::macho::segments::ParsedSegment;
 use crate::macho::dylibs::ParsedDylib;
+use crate::macho::dyld::Fixup;
 use crate::macho::rpaths::ParsedRPath;
 use crate::macho::symtab::{ParsedString, ParsedSymbol, sort_symbols};
 
@@ -22,6 +24,7 @@ pub struct ReportOptions {
     pub include_loadcmds: bool,
     pub include_symbols: bool,
     pub include_strings: bool,
+    pub include_fixups: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -41,6 +44,7 @@ pub struct ArchitectureReport {
     pub rpaths: Option<Vec<RPathsReport>>,
     pub symbols: Option<Vec<SymbolReport>>,
     pub strings: Option<Vec<StringReport>>,
+    pub fixups: Option<Vec<FixupReport>>
 }
 
 pub fn build_macho_report(is_fat: bool, architectures: Vec<ArchitectureReport>) -> MachOReport {
@@ -57,6 +61,7 @@ pub fn build_architecture_report(
     rpaths: &[ParsedRPath],
     symbols: &[ParsedSymbol],
     strings: &[ParsedString],
+    fixups: &[Fixup],
     json: bool,
     opts: &ReportOptions
 ) -> ArchitectureReport {
@@ -98,6 +103,12 @@ pub fn build_architecture_report(
             let mut symbols = symbols.to_vec();
             sort_symbols(&mut symbols);
             Some(symbols.iter().map(|s| s.build_report(json)).collect())
+        } else {
+            None
+        },
+
+        fixups: if opts.include_fixups {
+            Some(fixups.iter().map(|f| f.build_report()).collect())
         } else {
             None
         },

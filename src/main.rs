@@ -6,6 +6,7 @@ use std::mem::size_of;
 
 
 use moscope::macho::constants::*;
+use moscope::macho::dyld;
 use moscope::macho::fat;
 use moscope::macho::header;
 use moscope::macho::load_commands;
@@ -13,6 +14,7 @@ use moscope::macho::rpaths::ParsedRPath;
 use moscope::macho::segments;
 use moscope::macho::sections::SectionKind;
 use moscope::macho::dylibs;
+use moscope::macho::dyld::Fixup;
 use moscope::macho::rpaths;
 use moscope::macho::symtab;
 use moscope::macho::symtab::DYSymtabCommand;
@@ -87,6 +89,9 @@ struct Cli {
 
     #[arg(long)]
     no_rpaths: bool,
+
+    #[arg(long)]
+    no_fixups: bool,
 
     #[arg(long)]
     max_symbols: Option<usize>,
@@ -183,6 +188,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         include_loadcmds: !cli.no_loadcmds,
         include_symbols: !cli.no_symbols,
         include_strings: !cli.no_strings,
+        include_fixups: !cli.no_fixups,
     };
 
     let min_len = cli.min_string_length;
@@ -229,6 +235,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut all_load_commands = Vec::new();
     let mut all_parsed_symbols: Vec<Vec<symtab::ParsedSymbol>> = Vec::new();
     let mut all_parsed_strings: Vec<Vec<symtab::ParsedString>> = Vec::new();
+    let mut all_parsed_fixups: Vec<Vec<Fixup>> = Vec::new();
 
     for slice in arch_slices {
         // Read Mach-O header for this slice
@@ -259,11 +266,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut parsed_rpaths = Vec::new();
         let mut parsed_symbols: Vec<symtab::ParsedSymbol> = Vec::new();
         let mut parsed_strings = Vec::new();
+        let mut parsed_fixups: Vec<Fixup> = Vec::new();
 
         // LC_SYMTAB doesn't contain symbols it just declares info
         // So we need to keep track of it so we can get all the symbols
         let mut symtab_cmd: Option<symtab::SymtabCommand> = None;
         let mut dysymtab_cmd: Option<symtab::DYSymtabCommand> = None;
+        let mut dyldinfo_cmd: Option<dyld::DYLDInfoCommand> = None;
 
         for lc in &load_commands_vec {
             let base_cmd = lc.cmd & !LC_REQ_DYLD;
@@ -326,6 +335,26 @@ fn main() -> Result<(), Box<dyn Error>> {
                     };
 
                     dysymtab_cmd = Some(cmd);
+                }
+
+                LC_DYLD_INFO => {
+                    let off = lc.offset as usize;
+                    let cmd = dyld::DYLDInfoCommand {
+                        cmd: lc.cmd,
+                        cmdsize: lc.cmdsize,
+                        rebase_off: bytes_to(is_be, &data[off + 8 .. off + 12])?,
+                        rebase_size: bytes_to(is_be, &data[off + 12 .. off + 16])?,
+                        bind_off: bytes_to(is_be, &data[off + 16 .. off + 20])?,
+                        bind_size: bytes_to(is_be, &data[off + 20 .. off + 24])?,
+                        weak_bind_off: bytes_to(is_be, &data[off + 24 .. off + 28])?,
+                        weak_bind_size: bytes_to(is_be, &data[off + 28 .. off + 32])?,
+                        lazy_bind_off: bytes_to(is_be, &data[off + 32 .. off + 36])?,
+                        lazy_bind_size: bytes_to(is_be, &data[off + 36 .. off + 40])?,
+                        export_off: bytes_to(is_be, &data[off + 40 .. off + 44])?,
+                        export_size: bytes_to(is_be, &data[off + 44 .. off + 48])?,
+                    };
+
+                    dyldinfo_cmd = Some(cmd);
                 }
                 _ => {}
             }
@@ -515,6 +544,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
+        // Apply fixups for this slice
+        if let Some(dyldinfo) = &dyldinfo_cmd {
+            parsed_fixups = Fixup::parse( 
+                dyldinfo,
+                &parsed_segments,
+                &parsed_symbols,
+                0, // slide
+                &vm_image,
+                &data,
+            )?;
+        }
+
         // Before building the architecture report, apply max limit if specified
         if let Some(max) = max_strings_count {
             parsed_strings.truncate(max);
@@ -545,6 +586,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             &parsed_rpaths,
             &parsed_symbols,
             &parsed_strings,
+            &parsed_fixups,
             is_json,
             &report_opts,
         );
@@ -556,6 +598,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         all_load_commands.push(load_commands_vec);
         all_parsed_symbols.push(parsed_symbols);
         all_parsed_strings.push(parsed_strings);
+        all_parsed_fixups.push(parsed_fixups);
         
         // end of this slice
     }
@@ -596,6 +639,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 if !cli.no_strings {
                     symtab::print_strings_summary(strings, min_len, max_strings_count);
+                }
+
+                if !cli.no_fixups {
+                    dyld::print_fixups_summary(&all_parsed_fixups[i]);
                 }
             }
         }

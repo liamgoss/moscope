@@ -658,6 +658,69 @@ pub const LC_TARGET_TRIPLE: u32             = 0x39; // target triple used to com
 
 
 
+//
+// ------------------------------------------------------------
+// Fixups
+// ------------------------------------------------------------
+// REBASE INFO
+pub const REBASE_TYPE_POINTER: u8                                      = 0x01;
+pub const REBASE_TYPE_TEXT_ABSOLUTE32: u8                              = 0x02;
+pub const REBASE_TYPE_TEXT_PCREL32: u8                                 = 0x03;
+pub const REBASE_OPCODE_MASK: u8                                       = 0xF0;
+pub const REBASE_IMMEDIATE_MASK: u8                                    = 0x0F;
+pub const REBASE_OPCODE_DONE: u8                                       = 0x00;
+pub const REBASE_OPCODE_SET_TYPE_IMM: u8                               = 0x10;
+pub const REBASE_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB: u8                = 0x20;
+pub const REBASE_OPCODE_ADD_ADDR_ULEB: u8                              = 0x30;
+pub const REBASE_OPCODE_ADD_ADDR_IMM_SCALED: u8                        = 0x40;
+pub const REBASE_OPCODE_DO_REBASE_IMM_TIMES: u8                        = 0x50;
+pub const REBASE_OPCODE_DO_REBASE_ULEB_TIMES: u8                       = 0x60;
+pub const REBASE_OPCODE_DO_REBASE_ADD_ADDR_ULEB: u8                    = 0x70;
+pub const REBASE_OPCODE_DO_REBASE_ULEB_TIMES_SKIPPING_ULEB: u8         = 0x80;
+// BINDING INFO
+pub const BIND_TYPE_POINTER: u8                                        = 0x01;
+pub const BIND_TYPE_TEXT_ABSOLUTE32: u8                                = 0x02;
+pub const BIND_TYPE_TEXT_PCREL32: u8                                   = 0x03;
+
+pub const BIND_SPECIAL_DYLIB_SELF: i32                                  =  0;
+pub const BIND_SPECIAL_DYLIB_MAIN_EXECUTABLE: i32                       = -1;
+pub const BIND_SPECIAL_DYLIB_FLAT_LOOKUP: i32                           = -2;
+pub const BIND_SPECIAL_DYLIB_WEAK_LOOKUP: i32                           = -3;
+
+pub const BIND_SYMBOL_FLAGS_WEAK_IMPORT: u8                            = 0x01;
+pub const BIND_SYMBOL_FLAGS_NON_WEAK_DEFINITION: u8                    = 0x08;
+
+pub const BIND_OPCODE_MASK: u8                                         = 0xF0;
+pub const BIND_IMMEDIATE_MASK: u8                                      = 0x0F;
+pub const BIND_OPCODE_DONE: u8                                         = 0x00;
+pub const BIND_OPCODE_SET_DYLIB_ORDINAL_IMM: u8                        = 0x10;
+pub const BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB: u8                       = 0x20;
+pub const BIND_OPCODE_SET_DYLIB_SPECIAL_IMM: u8                        = 0x30;
+pub const BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM: u8                = 0x40;
+pub const BIND_OPCODE_SET_TYPE_IMM: u8                                 = 0x50;
+pub const BIND_OPCODE_SET_ADDEND_SLEB: u8                              = 0x60;
+pub const BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB: u8                  = 0x70;
+pub const BIND_OPCODE_ADD_ADDR_ULEB: u8                                = 0x80;
+pub const BIND_OPCODE_DO_BIND: u8                                      = 0x90;
+pub const BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB: u8                        = 0xA0;
+pub const BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: u8                  = 0xB0;
+pub const BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: u8             = 0xC0;
+pub const BIND_OPCODE_THREADED: u8                                     = 0xD0;
+pub const BIND_SUBOPCODE_THREADED_SET_BIND_ORDINAL_TABLE_SIZE_ULEB: u8 = 0x00;
+pub const BIND_SUBOPCODE_THREADED_APPLY: u8                            = 0x01;
+// EXPORT INFO
+pub const EXPORT_SYMBOL_FLAGS_KIND_MASK: u8                            = 0x03;
+pub const EXPORT_SYMBOL_FLAGS_REGULAR: u8                              = 0x00;
+pub const EXPORT_SYMBOL_FLAGS_THREAD_LOCAL: u8                         = 0x01;
+pub const EXPORT_SYMBOL_FLAGS_KIND_ABSOLUTE: u8                        = 0x02;
+pub const EXPORT_SYMBOL_FLAGS_WEAK_DEFINITION: u8                      = 0x04;
+pub const EXPORT_SYMBOL_FLAGS_REEXPORT: u8                             = 0x08;
+pub const EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER: u8                    = 0x10;
+pub const EXPORT_SYMBOL_FLAGS_STATIC_RESOLVER: u8                      = 0x20;
+
+
+
+
 
 pub fn cpu_type_name(cputype: i32) -> &'static str {
     match cputype & !CPU_ARCH_ABI64 {

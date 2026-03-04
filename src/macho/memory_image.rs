@@ -85,4 +85,15 @@ impl MachOMemoryImage {
             None // Section doesn't fit in buffer
         }
     }
+
+    pub fn read_u64(&self, vmaddr: u64) -> Option<u64> {
+        let offset = vmaddr.checked_sub(self.base_vmaddr)? as usize;
+        let end = offset.checked_add(8)?;
+        if end <= self.buffer.len() {
+            let bytes = &self.buffer[offset..end];
+            Some(u64::from_le_bytes(bytes.try_into().ok()?))
+        } else {
+            None
+        }
+    }
 }
