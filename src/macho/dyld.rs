@@ -168,16 +168,14 @@ impl Fixup  {
                 }
                 REBASE_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB => { // 0x20
                     let seg_index = (opcode & REBASE_IMMEDIATE_MASK) as usize;
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",
-                        cursor, opcode, seg_index, address, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let offset = read_uleb(stream, &mut cursor)?;
                     let seg = &segments[seg_index];
                     address = seg.vmaddr + offset;
                 }
 
                 REBASE_OPCODE_ADD_ADDR_ULEB => { // 0x30
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",
-                        cursor, opcode, 0, address, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let delta = read_uleb(stream, &mut cursor)?;
                     address = address.checked_add(delta)
                         .ok_or("address overflow during ADD_ADDR_ULEB")?;
@@ -196,8 +194,7 @@ impl Fixup  {
                     }
                 }
                 REBASE_OPCODE_DO_REBASE_ULEB_TIMES => { // 0x60
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",
-                        cursor, opcode, 0, address, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let count = read_uleb(stream, &mut cursor)?;
                     for _ in 0..count {
                         fixups.push(Fixup::Rebase { addr: address + slide });
@@ -207,19 +204,16 @@ impl Fixup  {
 
                 REBASE_OPCODE_DO_REBASE_ADD_ADDR_ULEB => { // 0x70
                     fixups.push(Fixup::Rebase { addr: address + slide });
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",
-                        cursor, opcode, 0, address, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let skip = read_uleb(stream, &mut cursor)?;
                     address = address.checked_add(skip + 8)
                         .ok_or("address overflow during DO_REBASE_ADD_ADDR_ULEB")?;
                 }
 
                 REBASE_OPCODE_DO_REBASE_ULEB_TIMES_SKIPPING_ULEB => { // 0x80
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",
-                        cursor, opcode, 0, address, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let count = read_uleb(stream, &mut cursor)?;
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",
-                        cursor, opcode, 0, address, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let skip = read_uleb(stream, &mut cursor)?;
                     for _ in 0..count {
                         fixups.push(Fixup::Rebase { addr: address + slide });
@@ -273,7 +267,7 @@ impl Fixup  {
             let opcode = stream[cursor];
             cursor += 1;
 
-            println!("cursor={} opcode=0x{:02x}", cursor-1, opcode);
+            
 
             match opcode & BIND_OPCODE_MASK {
 
@@ -284,7 +278,7 @@ impl Fixup  {
 
                 BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB => {
                     // Ordinal is encoded as a ULEB128 immediately after the opcode
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",cursor, opcode, segment_index, segment_offset, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     dylib_ordinal = read_uleb(stream, &mut cursor)? as i32;
                 }
 
@@ -324,15 +318,14 @@ impl Fixup  {
 
                 BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB => {
                     segment_index = (opcode & BIND_IMMEDIATE_MASK) as usize;
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",cursor, opcode, segment_index, segment_offset, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     segment_offset = read_uleb(stream, &mut cursor)?;
                 }
 
                 BIND_OPCODE_ADD_ADDR_ULEB => {
-                    println!("cursor={} bytes={:?}", cursor, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let raw = read_uleb(stream, &mut cursor)?;
                     let delta = raw as i64; // interpret as signed
-                    println!("ADD_ADDR_ULEB: segment_index={}. delta={}, cursor={}", segment_index, delta, cursor);
                     segment_offset = (segment_offset as i64)
                         .checked_add(delta)
                         .ok_or("segment_offset overflow during ADD_ADDR_ULEB")? as u64;
@@ -367,7 +360,7 @@ impl Fixup  {
                 }
 
                 BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB => {
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",cursor, opcode, segment_index, segment_offset, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let skip = read_uleb(stream, &mut cursor)?;
                     let seg = &segments[segment_index];
                     let addr = seg.vmaddr + segment_offset;
@@ -400,9 +393,9 @@ impl Fixup  {
                 }
 
                 BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB => {
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",cursor, opcode, segment_index, segment_offset, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let count = read_uleb(stream, &mut cursor)?;
-                    println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",cursor, opcode, segment_index, segment_offset, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                    
                     let skip = read_uleb(stream, &mut cursor)?;
 
                     let seg = &segments[segment_index];
@@ -444,7 +437,7 @@ impl Fixup  {
                     match subopcode {
 
                         BIND_SUBOPCODE_THREADED_SET_BIND_ORDINAL_TABLE_SIZE_ULEB => {
-                            println!("cursor={} opcode=0x{:02x} segment_index={} segment_offset={} next bytes={:?}",cursor, opcode, segment_index, segment_offset, &stream[cursor..cursor+10.min(stream.len()-cursor)]);
+                            
                             let size = read_uleb(stream, &mut cursor)? as usize;
                             threaded_table_size = size;
                             threaded_bind_table = Vec::with_capacity(size);
