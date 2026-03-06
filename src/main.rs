@@ -490,14 +490,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                         let max_count = indirect.len() - start;
                         let safe_count = count.min(max_count);
                         for i in 0..safe_count {
-                            let indirect_index = indirect[start + i];
+                            let raw = indirect[start + i];
 
-                            // special dyld values
-                            if indirect_index == INDIRECT_SYMBOL_ABS || indirect_index == INDIRECT_SYMBOL_LOCAL {
-                                continue; // skip
+                            let flags = raw & (INDIRECT_SYMBOL_ABS | INDIRECT_SYMBOL_LOCAL);
+                            if flags != 0 {
+                                continue;
                             }
 
-                            let sym = &mut parsed_symbols[indirect_index as usize];
+                            let indirect_index = (raw & !(INDIRECT_SYMBOL_ABS | INDIRECT_SYMBOL_LOCAL)) as usize;
+
+                            if indirect_index >= parsed_symbols.len() {
+                                continue;
+                            }
+
+                            let sym = &mut parsed_symbols[indirect_index];
 
                             sym.indirect_sect = Some(byte_array_to_string(&section.sectname));
                             sym.segname = Some(byte_array_to_string(&section.segname));
